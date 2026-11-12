@@ -6,7 +6,7 @@ export class StartScene extends Phaser.Scene {
   }
 
   create() {
-    // Obtiene las dimensiones del área del juego
+    // Obtiene las dimensiones del Ã¡rea del juego
     const { width, height } = this.scale.gameSize;
     // Calcula el centro horizontal de la pantalla
     const centerX = width / 2;
@@ -19,7 +19,7 @@ export class StartScene extends Phaser.Scene {
       color: '#eef0ed',
     }).setOrigin(0.5);
 
-    // Crea el botón que permite probar el movimiento del personaje
+    // Crea el botÃ³n que permite probar el movimiento del personaje
     const button = this.add.text(centerX, 112, 'Probar movimiento', {
       fontFamily: 'monospace',
       fontSize: '16px',
@@ -38,12 +38,12 @@ export class StartScene extends Phaser.Scene {
 
     button.on('pointerover', () => button.setBackgroundColor('#405769'));
     button.on('pointerout', () => button.setBackgroundColor('#324454'));
-    // Inicia el movimiento al hacer clic en el botón
+    // Inicia el movimiento al hacer clic en el botÃ³n
     button.on('pointerup', startMovement);
-    // También permite iniciar el movimiento presionando ENTER
+    // TambiÃ©n permite iniciar el movimiento presionando ENTER
     this.input.keyboard.once('keydown-ENTER', startMovement);
 
-    this.add.text(centerX, height - 24, 'ESCENA DE INICIO · PROTOTIPO', {
+    this.add.text(centerX, height - 24, 'ESCENA DE INICIO Â· PROTOTIPO', {
       fontFamily: 'monospace',
       fontSize: '16px',
       color: '#bac5cd',

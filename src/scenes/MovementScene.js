@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { Harry } from '../entities/Harry.js';
 import { FlashlightSystem } from '../systems/FlashlightSystem.js';
 
-// GeometrÌa del nivel est·tico
+// Geometr√≠a del nivel est√°tico
 const WORLD_WIDTH = 1664;
 const FLOOR_TOP = 312;
 const PLATFORMS = [
@@ -23,12 +23,12 @@ export class MovementScene extends Phaser.Scene {
     super('MovementScene');
   }
 
-  // Se instancian objetos, se configura fÌsicas y la c·mara
+  // Se instancian objetos, se configura f√≠sicas y la c√°mara
   create() {
     // Se obtiene la altura del lienzo (canvas) configurada en el juego
     const { height } = this.scale.gameSize;
 
-    // Se configura los lÌmites del motor de fÌsicas.
+    // Se configura los l√≠mites del motor de f√≠sicas.
     this.physics.world.setBounds(0, 0, WORLD_WIDTH, height);
 
     this.drawBackground();
@@ -43,20 +43,20 @@ export class MovementScene extends Phaser.Scene {
       this.addPlatform(platforms, x, y, width, 16);
     }
 
-    // Se instancia a Harry pas·ndole el contexto de esta escena ('this') y sus coordenadas iniciales.
+    // Se instancia a Harry pas√°ndole el contexto de esta escena ('this') y sus coordenadas iniciales.
     this.harry = new Harry(this, 96, 282);
 
     // Se usa collider para el manejo de colisiones entre la hitbox de Harry y alguna plataforma
     this.physics.add.collider(this.harry, platforms);
 
-    // ConfiguraciÛn de la c·mara principal
+    // Configuraci√≥n de la c√°mara principal
     const camera = this.cameras.main;
 
-    // Se limita la c·mara para que no muestre m·s all· de los bordes del nivel
+    // Se limita la c√°mara para que no muestre m√°s all√° de los bordes del nivel
     camera.setBounds(0, 0, WORLD_WIDTH, height);
 
-    // Se configura la c·mara para que siga a Harry y se envÌa el valor de 0.14 y 1 a los par·metros
-    // lerpX y lerpY para que el seguimiento de la c·mara sea suave
+    // Se configura la c√°mara para que siga a Harry y se env√≠a el valor de 0.14 y 1 a los par√°metros
+    // lerpX y lerpY para que el seguimiento de la c√°mara sea suave
     camera.startFollow(this.harry, true, 0.14, 1);
 
     this.createFlashlightDemo();
@@ -68,7 +68,7 @@ export class MovementScene extends Phaser.Scene {
       color: '#eef0ed',
     }).setScrollFactor(0);
 
-    this.add.text(20, 50, 'A / D o ? / ?  Moverse    Espacio  Saltar', {
+    this.add.text(20, 50, 'A / D o ‚Üê / ‚Üí  Moverse    Espacio  Saltar', {
       fontFamily: 'monospace',
       fontSize: '15px',
       color: '#bac5cd',
@@ -98,7 +98,7 @@ export class MovementScene extends Phaser.Scene {
     this.energyFill.setScale(energyRatio, 1);
     const label = atRechargePoint && !this.flashlight.isOn && energyRatio < 1
       ? 'Recargando'
-      : 'EnergÌa';
+      : 'Energ√≠a';
     this.energyLabel.setText(`${label} ${Math.ceil(energyRatio * 100)}%`);
   }
 
@@ -130,7 +130,7 @@ export class MovementScene extends Phaser.Scene {
 
     const right = this.scale.gameSize.width - 20;
     const barX = right - ENERGY_BAR_WIDTH;
-    this.energyLabel = this.add.text(right, 23, 'EnergÌa 100%', {
+    this.energyLabel = this.add.text(right, 23, 'Energ√≠a 100%', {
       fontFamily: 'monospace',
       fontSize: '14px',
       color: '#eef0ed',
@@ -141,12 +141,12 @@ export class MovementScene extends Phaser.Scene {
       .setOrigin(0).setScrollFactor(0);
   }
 
-  // MÈtodo auxiliar para crear plataformas de manera limpia.
+  // M√©todo auxiliar para crear plataformas de manera limpia.
   addPlatform(group, x, y, width, height) {
     // Posicionamiento de las plataformas
     const surface = this.add.rectangle(x + width / 2, y + height / 2, width, height, 0x34434f);
 
-    // Se aÒade al grupo de fÌsicas est·ticas.
+    // Se a√±ade al grupo de f√≠sicas est√°ticas.
     group.add(surface);
 
     // Borde decorativo superior de la plataforma.
@@ -156,7 +156,7 @@ export class MovementScene extends Phaser.Scene {
   // Dibuja el arte de fondo (Background) con formas primitivas
   drawBackground() {
     const wall = this.add.graphics();
-    // Bloques de color que simulan las paredes oscuras y zÛcalos de los pasillos
+    // Bloques de color que simulan las paredes oscuras y z√≥calos de los pasillos
     wall.fillStyle(0x18212d).fillRect(0, 97, WORLD_WIDTH, FLOOR_TOP - 97);
     wall.fillStyle(0x25313f).fillRect(0, 97, WORLD_WIDTH, 4);
     wall.fillStyle(0x141c27).fillRect(0, 282, WORLD_WIDTH, 30);
