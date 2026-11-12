@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { Harry } from '../entities/Harry.js';
+import { Shadow } from '../entities/Shadow.js';
 import { FlashlightSystem } from '../systems/FlashlightSystem.js';
+import { HealthSystem } from '../systems/HealthSystem.js';
 
 // Geometría del nivel estático
 const WORLD_WIDTH = 1664;
@@ -17,6 +19,11 @@ const PLATFORMS = [
 const RECHARGE_POINTS = [350, 1060];
 const RECHARGE_HALF_WIDTH = 24;
 const ENERGY_BAR_WIDTH = 140;
+const HARRY_MAX_HEALTH = 3;
+const CONTACT_DAMAGE = 1;
+const INVULNERABILITY_MS = 1000;
+const KNOCKBACK_MS = 170;
+const KNOCKBACK_SPEED = 185;
 
 export class MovementScene extends Phaser.Scene {
   constructor() {
@@ -60,9 +67,10 @@ export class MovementScene extends Phaser.Scene {
     camera.startFollow(this.harry, true, 0.14, 1);
 
     this.createFlashlightDemo();
+    this.createCombatDemo(platforms);
 
     // Interfaz de Usuario (UI) temporal.
-    this.add.text(20, 18, 'Prueba de movimiento', {
+    this.add.text(20, 18, 'Prueba de combate', {
       fontFamily: 'Georgia, serif',
       fontSize: '25px',
       color: '#eef0ed',
@@ -82,8 +90,14 @@ export class MovementScene extends Phaser.Scene {
   }
 
   // update() es el Game Loop principal de la escena. Se ejecuta a ~60 fotogramas por segundo.
-  update(_time, delta) {
-    this.harry.updateMovement();
+  update(time, delta) {
+    if (this.health.isDepleted) {
+      return;
+    }
+
+    if (time >= this.knockbackUntil) {
+      this.harry.updateMovement();
+    }
 
     const atRechargePoint = this.harry.body.bottom >= FLOOR_TOP && RECHARGE_POINTS.some(
       x => Math.abs(this.harry.x - x) <= RECHARGE_HALF_WIDTH,
@@ -100,6 +114,8 @@ export class MovementScene extends Phaser.Scene {
       ? 'Recargando'
       : 'Energía';
     this.energyLabel.setText(`${label} ${Math.ceil(energyRatio * 100)}%`);
+
+    this.updateCombat(time, delta);
   }
 
   createFlashlightDemo() {
@@ -121,10 +137,10 @@ export class MovementScene extends Phaser.Scene {
         .setVisible(false)
     ));
 
-    this.input.keyboard.addKey('J').on('down', this.flashlight.toggle, this.flashlight);
+    this.input.keyboard.addKey('J').on('down', this.toggleFlashlight, this);
     this.input.on('pointerdown', pointer => {
       if (!pointer.wasTouch && pointer.button === 0) {
-        this.flashlight.toggle();
+        this.toggleFlashlight();
       }
     });
 
@@ -139,6 +155,69 @@ export class MovementScene extends Phaser.Scene {
       .setOrigin(0).setScrollFactor(0);
     this.energyFill = this.add.rectangle(barX, 45, ENERGY_BAR_WIDTH, 7, 0xe7c688)
       .setOrigin(0).setScrollFactor(0);
+  }
+
+  toggleFlashlight() {
+    if (!this.health.isDepleted) {
+      this.flashlight.toggle();
+    }
+  }
+
+  createCombatDemo(platforms) {
+    this.health = new HealthSystem(HARRY_MAX_HEALTH, INVULNERABILITY_MS);
+    this.knockbackUntil = 0;
+    this.shadow = new Shadow(this, 516, FLOOR_TOP - 19, { left: 420, right: 542 });
+    this.physics.add.collider(this.shadow, platforms);
+
+    this.healthLabel = this.add.text(this.scale.gameSize.width - 20, 62, `Salud ${this.health.current}/${this.health.maxHealth}`, {
+      fontFamily: 'monospace',
+      fontSize: '14px',
+      color: '#efb1b2',
+    }).setOrigin(1, 0).setScrollFactor(0);
+  }
+
+  updateCombat(time, delta) {
+    // La luz se evalúa antes del contacto para interrumpir el daño en el mismo fotograma.
+    const illuminated = this.flashlight.illuminates(this.shadow.x, this.shadow.y);
+    this.shadow.updateBehavior(delta, illuminated);
+
+    // La intersección detecta el daño sin marcar a Harry como apoyado sobre la criatura.
+    const touchesShadow = this.shadow.canDamage
+      && this.physics.world.intersects(this.harry.body, this.shadow.body);
+    if (touchesShadow && this.health.takeDamage(CONTACT_DAMAGE, time)) {
+      const direction = this.harry.body.center.x < this.shadow.body.center.x ? -1 : 1;
+      this.knockbackUntil = time + KNOCKBACK_MS;
+      this.harry.setVelocity(direction * KNOCKBACK_SPEED, -130);
+      this.healthLabel.setText(`Salud ${this.health.current}/${this.health.maxHealth}`);
+
+      if (this.health.isDepleted) {
+        this.showCombatRetry();
+      }
+    }
+
+    this.harry.setAlpha(this.health.isInvulnerable(time) ? 0.55 : 1);
+  }
+
+  showCombatRetry() {
+    this.physics.pause();
+    const { width, height } = this.scale.gameSize;
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    this.add.rectangle(centerX, centerY, width, height, 0x0b1018, 0.82)
+      .setScrollFactor(0).setDepth(3);
+    this.add.text(centerX, centerY - 16, 'Harry se quedó sin salud', {
+      fontFamily: 'Georgia, serif',
+      fontSize: '29px',
+      color: '#eef0ed',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(3);
+    this.add.text(centerX, centerY + 22, 'Pulsa R para volver a intentarlo', {
+      fontFamily: 'monospace',
+      fontSize: '15px',
+      color: '#bac5cd',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(3);
+
+    this.input.keyboard.once('keydown-R', () => this.scene.restart());
   }
 
   // Método auxiliar para crear plataformas de manera limpia.

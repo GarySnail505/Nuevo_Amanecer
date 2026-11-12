@@ -36,7 +36,9 @@ La compilación se genera en `dist/`. Abre [http://localhost:4173](http://localh
 
 ## Controles
 
-En la escena de prueba puedes moverte y saltar con el teclado. Las demás acciones y los controles táctiles se incorporarán en fases posteriores.
+Entra por **Probar movimiento** para abrir el escenario de combate de la Fase 4. Usa `J` o clic izquierdo para iluminar a La Sombra. El haz detiene su avance y, tras acumular suficiente exposición, la criatura desaparece. Puedes recuperar energía sobre una franja **Recarga** con la linterna apagada.
+
+El contacto con La Sombra quita un punto de salud. Si Harry pierde los tres puntos, pulsa `R` para reiniciar la prueba. La interacción, la pausa y los controles táctiles se incorporarán en fases posteriores.
 
 | Acción | Escritorio | Móvil |
 | --- | --- | --- |
