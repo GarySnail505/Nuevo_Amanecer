@@ -22,7 +22,7 @@ npm ci
 npm run dev
 ```
 
-Abre [http://localhost:5173](http://localhost:5173) o la dirección que indique Vite en la terminal. Desde el título, haz clic en **Probar movimiento** o pulsa `Enter` para entrar a la escena de prueba. Mantén la terminal abierta mientras juegas y presiona `Ctrl+C` para detener el servidor. En los siguientes arranques basta con `npm run dev` si las dependencias siguen instaladas.
+Abre [http://localhost:5173](http://localhost:5173) o la dirección que indique Vite en la terminal. Elige **Iniciar** para jugar desde la entrada o **Continuar** para cargar el último punto de control. `Enter` continúa si hay una partida guardada y empieza desde la entrada en la primera visita. Mantén la terminal abierta mientras juegas y presiona `Ctrl+C` para detener el servidor. En los siguientes arranques basta con `npm run dev` si las dependencias siguen instaladas.
 
 Para generar y revisar la compilación de producción, ejecuta estos comandos.
 
@@ -36,17 +36,22 @@ La compilación se genera en `dist/`. Abre [http://localhost:4173](http://localh
 
 ## Controles
 
-Entra por **Probar movimiento** para abrir el escenario de combate de la Fase 4. Usa `J` o clic izquierdo para iluminar a La Sombra. El haz detiene su avance y, tras acumular suficiente exposición, la criatura desaparece. Puedes recuperar energía sobre una franja **Recarga** con la linterna apagada.
+Usa la linterna para iluminar a La Sombra. El haz detiene su avance y, tras acumular suficiente exposición, la criatura desaparece. Puedes recuperar energía sobre una franja **Recarga** con la linterna apagada.
 
-El contacto con La Sombra quita un punto de salud. Si Harry pierde los tres puntos, pulsa `R` para reiniciar la prueba. La interacción, la pausa y los controles táctiles se incorporarán en fases posteriores.
+El contacto con La Sombra quita un punto de salud. Si Harry pierde los tres puntos, elige **Reintentar desde punto de control** o pulsa `R` para volver al último punto alcanzado.
 
 | Acción | Escritorio | Móvil |
 | --- | --- | --- |
 | Moverse | `A` y `D` o flechas izquierda y derecha | Botones de dirección |
 | Saltar | `Espacio` | Botón de salto |
 | Activar o apagar la linterna | `J` o clic izquierdo | Botón de linterna |
-| Interactuar | `E` | Botón contextual |
-| Pausar | `Esc` | Por definir |
+| Pausar | `Esc` | Botón **Pausa** |
+
+## Progreso de la Fase 5
+
+La primera franja de recarga del pasillo funciona como punto de control. Al pasar por encima, el juego guarda el progreso en este navegador con `localStorage`. **Continuar** y **Reintentar desde punto de control** devuelven a Harry a ese punto con la salud y la linterna llenas. **Iniciar** vuelve a la entrada.
+
+El menú de pausa permite continuar, reiniciar desde el punto de control, cambiar la preferencia de audio o volver al menú principal. La preferencia de audio queda guardada para cuando se incorporen los sonidos del juego. En dispositivos táctiles, los botones aparecen debajo del lienzo y permiten moverse y saltar a la vez.
 
 
 ## Créditos

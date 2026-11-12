@@ -57,10 +57,10 @@ export class Harry extends Phaser.Physics.Arcade.Sprite {
     });
   }
 
-  updateMovement() {
+  updateMovement({ leftDown = false, rightDown = false, jumpRequested = false } = {}) {
     const { a, d, left, right, jump } = this.keys;
-    const moveLeft = a.isDown || left.isDown;
-    const moveRight = d.isDown || right.isDown;
+    const moveLeft = a.isDown || left.isDown || leftDown;
+    const moveRight = d.isDown || right.isDown || rightDown;
     const direction = Number(moveRight) - Number(moveLeft);
 
     this.setVelocityX(direction * WALK_SPEED);
@@ -68,7 +68,7 @@ export class Harry extends Phaser.Physics.Arcade.Sprite {
       this.setFlipX(direction < 0);
     }
 
-    const jumpPressed = Phaser.Input.Keyboard.JustDown(jump);
+    const jumpPressed = Phaser.Input.Keyboard.JustDown(jump) || jumpRequested;
     const grounded = this.body.blocked.down || this.body.touching.down;
     if (jumpPressed && grounded) {
       this.setVelocityY(-JUMP_SPEED);

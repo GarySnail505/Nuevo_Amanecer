@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { MovementScene } from '../scenes/MovementScene.js';
 import { PreloadScene } from '../scenes/PreloadScene.js';
+import { RunMenuScene } from '../scenes/RunMenuScene.js';
 import { StartScene } from '../scenes/StartScene.js';
 //Configuración principal del juego
 export const gameConfig = {
@@ -20,5 +21,5 @@ export const gameConfig = {
     arcade: { gravity: { y: 900 } },
   },
   //orden de ejecución
-  scene: [PreloadScene, StartScene, MovementScene],
+  scene: [PreloadScene, StartScene, MovementScene, RunMenuScene],
 };

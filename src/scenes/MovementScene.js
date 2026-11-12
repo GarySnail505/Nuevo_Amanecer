@@ -3,6 +3,9 @@ import { Harry } from '../entities/Harry.js';
 import { Shadow } from '../entities/Shadow.js';
 import { FlashlightSystem } from '../systems/FlashlightSystem.js';
 import { HealthSystem } from '../systems/HealthSystem.js';
+import { CHECKPOINTS, DEFAULT_CHECKPOINT, saveCheckpoint } from '../systems/SaveStore.js';
+import { GameHud } from '../ui/GameHud.js';
+import { TouchControls } from '../ui/TouchControls.js';
 
 // Geometría del nivel estático
 const WORLD_WIDTH = 1664;
@@ -16,9 +19,8 @@ const PLATFORMS = [
   { x: 1180, y: 259, width: 128 },
   { x: 1360, y: 246, width: 108 },
 ];
-const RECHARGE_POINTS = [350, 1060];
+const RECHARGE_POINTS = [CHECKPOINTS.recarga.x, 1060];
 const RECHARGE_HALF_WIDTH = 24;
-const ENERGY_BAR_WIDTH = 140;
 const HARRY_MAX_HEALTH = 3;
 const CONTACT_DAMAGE = 1;
 const INVULNERABILITY_MS = 1000;
@@ -31,7 +33,11 @@ export class MovementScene extends Phaser.Scene {
   }
 
   // Se instancian objetos, se configura físicas y la cámara
-  create() {
+  create({ checkpointId = DEFAULT_CHECKPOINT } = {}) {
+    this.checkpointId = Object.hasOwn(CHECKPOINTS, checkpointId) ? checkpointId : DEFAULT_CHECKPOINT;
+    this.playTime = 0;
+    this.runMenuOpen = false;
+
     // Se obtiene la altura del lienzo (canvas) configurada en el juego
     const { height } = this.scale.gameSize;
 
@@ -51,7 +57,8 @@ export class MovementScene extends Phaser.Scene {
     }
 
     // Se instancia a Harry pasándole el contexto de esta escena ('this') y sus coordenadas iniciales.
-    this.harry = new Harry(this, 96, 282);
+    const spawn = CHECKPOINTS[this.checkpointId];
+    this.harry = new Harry(this, spawn.x, spawn.y);
 
     // Se usa collider para el manejo de colisiones entre la hitbox de Harry y alguna plataforma
     this.physics.add.collider(this.harry, platforms);
@@ -69,59 +76,66 @@ export class MovementScene extends Phaser.Scene {
     this.createFlashlightDemo();
     this.createCombatDemo(platforms);
 
-    // Interfaz de Usuario (UI) temporal.
-    this.add.text(20, 18, 'Prueba de combate', {
-      fontFamily: 'Georgia, serif',
-      fontSize: '25px',
-      color: '#eef0ed',
-    }).setScrollFactor(0);
+    this.hud = new GameHud(this, this.health, this.checkpointId);
+    this.touchControls = new TouchControls(this, {
+      onFlashlight: () => this.toggleFlashlight(),
+      onPause: () => this.openRunMenu('pause'),
+    });
 
-    this.add.text(20, 50, 'A / D o ← / →  Moverse    Espacio  Saltar', {
-      fontFamily: 'monospace',
-      fontSize: '15px',
-      color: '#bac5cd',
-    }).setScrollFactor(0);
+    this.input.keyboard.on('keydown-ESC', event => {
+      if (!event.repeat) {
+        this.openRunMenu('pause');
+      }
+    });
+    this.events.on(Phaser.Scenes.Events.RESUME, this.resumeRun, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.events.off(Phaser.Scenes.Events.RESUME, this.resumeRun, this);
+    });
 
-    this.add.text(20, 74, 'J / clic izquierdo  Linterna', {
-      fontFamily: 'monospace',
-      fontSize: '15px',
-      color: '#bac5cd',
-    }).setScrollFactor(0);
+    saveCheckpoint(this.checkpointId);
   }
 
   // update() es el Game Loop principal de la escena. Se ejecuta a ~60 fotogramas por segundo.
-  update(time, delta) {
-    if (this.health.isDepleted) {
+  update(_time, delta) {
+    if (this.runMenuOpen) {
       return;
     }
 
-    if (time >= this.knockbackUntil) {
-      this.harry.updateMovement();
+    this.playTime += delta;
+    const jumpRequested = this.touchControls.consumeJump();
+    if (this.playTime >= this.knockbackUntil) {
+      this.harry.updateMovement({
+        leftDown: this.touchControls.leftDown,
+        rightDown: this.touchControls.rightDown,
+        jumpRequested,
+      });
     }
 
-    const atRechargePoint = this.harry.body.bottom >= FLOOR_TOP && RECHARGE_POINTS.some(
-      x => Math.abs(this.harry.x - x) <= RECHARGE_HALF_WIDTH,
-    );
+    const atRechargePoint = RECHARGE_POINTS.some(x => this.isOnRechargePad(x));
+    if (this.checkpointId !== 'recarga' && this.isOnRechargePad(CHECKPOINTS.recarga.x)) {
+      this.checkpointId = 'recarga';
+      saveCheckpoint(this.checkpointId);
+      this.hud.setCheckpoint(this.checkpointId);
+    }
     this.flashlight.update(delta, atRechargePoint);
 
     for (const marker of this.revealMarkers) {
       marker.setVisible(this.flashlight.illuminates(marker.x, marker.y));
     }
 
-    const energyRatio = this.flashlight.energyRatio;
-    this.energyFill.setScale(energyRatio, 1);
-    const label = atRechargePoint && !this.flashlight.isOn && energyRatio < 1
-      ? 'Recargando'
-      : 'Energía';
-    this.energyLabel.setText(`${label} ${Math.ceil(energyRatio * 100)}%`);
+    this.hud.setEnergy(this.flashlight.energyRatio, atRechargePoint && !this.flashlight.isOn);
+    this.updateCombat(this.playTime, delta);
+  }
 
-    this.updateCombat(time, delta);
+  isOnRechargePad(x) {
+    return this.harry.body.bottom >= FLOOR_TOP && Math.abs(this.harry.x - x) <= RECHARGE_HALF_WIDTH;
   }
 
   createFlashlightDemo() {
     for (const x of RECHARGE_POINTS) {
       this.add.rectangle(x, FLOOR_TOP + 4, RECHARGE_HALF_WIDTH * 2, 8, 0x73b3ae);
-      this.add.text(x, FLOOR_TOP + 12, 'Recarga', {
+      const label = x === CHECKPOINTS.recarga.x ? 'Recarga · Punto de control' : 'Recarga';
+      this.add.text(x, FLOOR_TOP + 12, label, {
         fontFamily: 'monospace',
         fontSize: '14px',
         color: '#bde2dc',
@@ -143,22 +157,10 @@ export class MovementScene extends Phaser.Scene {
         this.toggleFlashlight();
       }
     });
-
-    const right = this.scale.gameSize.width - 20;
-    const barX = right - ENERGY_BAR_WIDTH;
-    this.energyLabel = this.add.text(right, 23, 'Energía 100%', {
-      fontFamily: 'monospace',
-      fontSize: '14px',
-      color: '#eef0ed',
-    }).setOrigin(1, 0).setScrollFactor(0);
-    this.add.rectangle(barX, 45, ENERGY_BAR_WIDTH, 7, 0x34434f)
-      .setOrigin(0).setScrollFactor(0);
-    this.energyFill = this.add.rectangle(barX, 45, ENERGY_BAR_WIDTH, 7, 0xe7c688)
-      .setOrigin(0).setScrollFactor(0);
   }
 
   toggleFlashlight() {
-    if (!this.health.isDepleted) {
+    if (!this.runMenuOpen) {
       this.flashlight.toggle();
     }
   }
@@ -168,12 +170,6 @@ export class MovementScene extends Phaser.Scene {
     this.knockbackUntil = 0;
     this.shadow = new Shadow(this, 516, FLOOR_TOP - 19, { left: 420, right: 542 });
     this.physics.add.collider(this.shadow, platforms);
-
-    this.healthLabel = this.add.text(this.scale.gameSize.width - 20, 62, `Salud ${this.health.current}/${this.health.maxHealth}`, {
-      fontFamily: 'monospace',
-      fontSize: '14px',
-      color: '#efb1b2',
-    }).setOrigin(1, 0).setScrollFactor(0);
   }
 
   updateCombat(time, delta) {
@@ -188,36 +184,30 @@ export class MovementScene extends Phaser.Scene {
       const direction = this.harry.body.center.x < this.shadow.body.center.x ? -1 : 1;
       this.knockbackUntil = time + KNOCKBACK_MS;
       this.harry.setVelocity(direction * KNOCKBACK_SPEED, -130);
-      this.healthLabel.setText(`Salud ${this.health.current}/${this.health.maxHealth}`);
+      this.hud.setHealth(this.health);
 
       if (this.health.isDepleted) {
-        this.showCombatRetry();
+        this.openRunMenu('defeat');
       }
     }
 
     this.harry.setAlpha(this.health.isInvulnerable(time) ? 0.55 : 1);
   }
 
-  showCombatRetry() {
-    this.physics.pause();
-    const { width, height } = this.scale.gameSize;
-    const centerX = width / 2;
-    const centerY = height / 2;
+  openRunMenu(mode) {
+    if (this.runMenuOpen) {
+      return;
+    }
 
-    this.add.rectangle(centerX, centerY, width, height, 0x0b1018, 0.82)
-      .setScrollFactor(0).setDepth(3);
-    this.add.text(centerX, centerY - 16, 'Harry se quedó sin salud', {
-      fontFamily: 'Georgia, serif',
-      fontSize: '29px',
-      color: '#eef0ed',
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(3);
-    this.add.text(centerX, centerY + 22, 'Pulsa R para volver a intentarlo', {
-      fontFamily: 'monospace',
-      fontSize: '15px',
-      color: '#bac5cd',
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(3);
+    this.runMenuOpen = true;
+    this.touchControls.setEnabled(false);
+    this.scene.pause();
+    this.scene.launch('RunMenuScene', { mode, checkpointId: this.checkpointId });
+  }
 
-    this.input.keyboard.once('keydown-R', () => this.scene.restart());
+  resumeRun() {
+    this.runMenuOpen = false;
+    this.touchControls.setEnabled(true);
   }
 
   // Método auxiliar para crear plataformas de manera limpia.
