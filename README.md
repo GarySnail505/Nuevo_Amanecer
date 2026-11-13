@@ -22,7 +22,7 @@ npm ci
 npm run dev
 ```
 
-Abre [http://localhost:5173](http://localhost:5173) o la dirección que indique Vite en la terminal. Elige **Iniciar** para jugar desde la entrada o **Continuar** para cargar el último punto de control. `Enter` continúa si hay una partida guardada y empieza desde la entrada en la primera visita. Mantén la terminal abierta mientras juegas y presiona `Ctrl+C` para detener el servidor. En los siguientes arranques basta con `npm run dev` si las dependencias siguen instaladas.
+Abre [http://localhost:5173](http://localhost:5173) o la dirección que indique Vite en la terminal. Elige **Iniciar** para ver la llamada de Michael o **Continuar** para cargar el último punto de control. `Enter` continúa si hay una partida guardada y abre la introducción en la primera visita. Mantén la terminal abierta mientras juegas y presiona `Ctrl+C` para detener el servidor. En los siguientes arranques basta con `npm run dev` si las dependencias siguen instaladas.
 
 Para generar y revisar la compilación de producción, ejecuta estos comandos.
 
@@ -53,9 +53,8 @@ La primera franja de recarga del pasillo funciona como punto de control. Al pasa
 
 El menú de pausa permite continuar, reiniciar desde el punto de control, cambiar la preferencia de audio o volver al menú principal. La preferencia de audio queda guardada para cuando se incorporen los sonidos del juego. En dispositivos táctiles, los botones aparecen debajo del lienzo y permiten moverse y saltar a la vez.
 
+## Historia y recuerdos
 
-## Créditos
+La introducción muestra la llamada de Michael en el hospital y el regreso de Harry al orfanato. Pulsa **Continuar** en cada fragmento para avanzar.
 
-- **Desarrollo y diseño del juego** · Por completar con los integrantes del equipo.
-- **Fachada del orfanato** · Ilustración SVG provisional creada para el prototipo.
-- **Herramientas** · [Phaser](https://phaser.io/) y [Vite](https://vite.dev/).
+Ilumina las dos pinturas ocultas del pasillo. Al descubrir una, se abre su título y el recuerdo de Michael. La partida queda en pausa mientras lees. Puedes volver a consultar las pinturas encontradas desde **Recuerdos**, en el menú principal o en la pausa. La galería se guarda en el navegador junto con el punto de control.

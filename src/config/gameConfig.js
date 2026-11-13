@@ -1,4 +1,6 @@
 import Phaser from 'phaser';
+import { IntroScene } from '../scenes/IntroScene.js';
+import { MemoriesScene } from '../scenes/MemoriesScene.js';
 import { MovementScene } from '../scenes/MovementScene.js';
 import { PreloadScene } from '../scenes/PreloadScene.js';
 import { RunMenuScene } from '../scenes/RunMenuScene.js';
@@ -8,18 +10,18 @@ export const gameConfig = {
   type: Phaser.AUTO,
   parent: 'game',
   backgroundColor: '#0b1018',
-//Configuración de dimensiones y escalado
+  //Configuración de dimensiones y escalado
   scale: {
     width: 640,
     height: 360,
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
-//Configuración del motor de físicas
+  //Configuración del motor de físicas
   physics: {
     default: 'arcade',
     arcade: { gravity: { y: 900 } },
   },
   //orden de ejecución
-  scene: [PreloadScene, StartScene, MovementScene, RunMenuScene],
+  scene: [PreloadScene, StartScene, IntroScene, MovementScene, RunMenuScene, MemoriesScene],
 };

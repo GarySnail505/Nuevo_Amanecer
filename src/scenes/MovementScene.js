@@ -1,10 +1,12 @@
 import Phaser from 'phaser';
+import { PAINTINGS } from '../data/paintings.js';
 import { Harry } from '../entities/Harry.js';
 import { Shadow } from '../entities/Shadow.js';
 import { FlashlightSystem } from '../systems/FlashlightSystem.js';
 import { HealthSystem } from '../systems/HealthSystem.js';
-import { CHECKPOINTS, DEFAULT_CHECKPOINT, saveCheckpoint } from '../systems/SaveStore.js';
+import { CHECKPOINTS, DEFAULT_CHECKPOINT, loadSave, rememberPainting, saveCheckpoint } from '../systems/SaveStore.js';
 import { GameHud } from '../ui/GameHud.js';
+import { drawPainting } from '../ui/PaintingArt.js';
 import { TouchControls } from '../ui/TouchControls.js';
 
 // Geometría del nivel estático
@@ -36,7 +38,7 @@ export class MovementScene extends Phaser.Scene {
   create({ checkpointId = DEFAULT_CHECKPOINT } = {}) {
     this.checkpointId = Object.hasOwn(CHECKPOINTS, checkpointId) ? checkpointId : DEFAULT_CHECKPOINT;
     this.playTime = 0;
-    this.runMenuOpen = false;
+    this.overlayOpen = false;
 
     // Se obtiene la altura del lienzo (canvas) configurada en el juego
     const { height } = this.scale.gameSize;
@@ -75,6 +77,13 @@ export class MovementScene extends Phaser.Scene {
 
     this.createFlashlightDemo();
     this.createCombatDemo(platforms);
+    this.discoveredPaintings = new Set(loadSave().paintings);
+    this.paintings = PAINTINGS.map(({ id, x, y }) => ({
+      id,
+      x,
+      y,
+      art: drawPainting(this, id, x, y, 24, 20).setDepth(2).setVisible(false),
+    }));
 
     this.hud = new GameHud(this, this.health, this.checkpointId);
     this.touchControls = new TouchControls(this, {
@@ -97,7 +106,7 @@ export class MovementScene extends Phaser.Scene {
 
   // update() es el Game Loop principal de la escena. Se ejecuta a ~60 fotogramas por segundo.
   update(_time, delta) {
-    if (this.runMenuOpen) {
+    if (this.overlayOpen) {
       return;
     }
 
@@ -118,20 +127,39 @@ export class MovementScene extends Phaser.Scene {
       this.hud.setCheckpoint(this.checkpointId);
     }
     this.flashlight.update(delta, atRechargePoint);
-
-    for (const marker of this.revealMarkers) {
-      marker.setVisible(this.flashlight.illuminates(marker.x, marker.y));
-    }
-
     this.hud.setEnergy(this.flashlight.energyRatio, atRechargePoint && !this.flashlight.isOn);
-    this.updateCombat(this.playTime, delta);
+    if (!this.updatePaintings()) {
+      this.updateCombat(this.playTime, delta);
+    }
   }
 
+  updatePaintings() {
+    for (const { id, x, y, art } of this.paintings) {
+      // Evalúa si el punto (x,y) de la pintura actual está dentro del alcance del haz de la linterna
+      const illuminated = this.flashlight.illuminates(x, y);
+
+      // La pintura solo es visible si está siendo iluminada en este instante
+      art.setVisible(illuminated);
+
+      // Si es iluminada y no estaba en el registro de descubiertas (Set), se procesa el hallazgo
+      if (illuminated && !this.discoveredPaintings.has(id)) {
+        rememberPainting(id);
+        // Pausa el movimiento y abre la escena modal del recuerdo para mostrar el texto narrativo
+        this.discoveredPaintings.add(id);
+        this.openOverlay('MemoriesScene', { returnTo: 'MovementScene', paintingId: id });
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Se verifica si Harry está sobre una zona de recarga
   isOnRechargePad(x) {
     return this.harry.body.bottom >= FLOOR_TOP && Math.abs(this.harry.x - x) <= RECHARGE_HALF_WIDTH;
   }
 
   createFlashlightDemo() {
+    // Dibuja visualmente los puntos de recarga basados en las constantes declaradas
     for (const x of RECHARGE_POINTS) {
       this.add.rectangle(x, FLOOR_TOP + 4, RECHARGE_HALF_WIDTH * 2, 8, 0x73b3ae);
       const label = x === CHECKPOINTS.recarga.x ? 'Recarga · Punto de control' : 'Recarga';
@@ -142,15 +170,10 @@ export class MovementScene extends Phaser.Scene {
       }).setOrigin(0.5, 0);
     }
 
+    // Lógica de consumo y orientación de la linterna
     this.flashlight = new FlashlightSystem(this, this.harry);
-    this.revealMarkers = [[238, 290], [675, 288], [1256, 235]].map(([x, y]) => (
-      this.add.rectangle(x, y, 18, 18, 0x66513b)
-        .setStrokeStyle(2, 0xf0ce8d)
-        .setAngle(45)
-        .setDepth(2)
-        .setVisible(false)
-    ));
 
+    // Asignación de la tecla J y clic izq. para enceder/apagar la linterna
     this.input.keyboard.addKey('J').on('down', this.toggleFlashlight, this);
     this.input.on('pointerdown', pointer => {
       if (!pointer.wasTouch && pointer.button === 0) {
@@ -159,8 +182,9 @@ export class MovementScene extends Phaser.Scene {
     });
   }
 
+  // Se bloquea el encendido o apagaod de la linterna si hay un menú abierto
   toggleFlashlight() {
-    if (!this.runMenuOpen) {
+    if (!this.overlayOpen) {
       this.flashlight.toggle();
     }
   }
@@ -195,18 +219,25 @@ export class MovementScene extends Phaser.Scene {
   }
 
   openRunMenu(mode) {
-    if (this.runMenuOpen) {
+    this.openOverlay('RunMenuScene', { mode, checkpointId: this.checkpointId });
+  }
+
+  // Evita abrir múltiples menús simultáneamente, se desactiva los controles si un menú está abierto
+  // y se pausa la ejecución de MovementScene
+  openOverlay(sceneKey, data) {
+    if (this.overlayOpen) {
       return;
     }
 
-    this.runMenuOpen = true;
+    this.overlayOpen = true;
     this.touchControls.setEnabled(false);
     this.scene.pause();
-    this.scene.launch('RunMenuScene', { mode, checkpointId: this.checkpointId });
+    this.scene.launch(sceneKey, data);
   }
 
+  // Restaura controles y estado
   resumeRun() {
-    this.runMenuOpen = false;
+    this.overlayOpen = false;
     this.touchControls.setEnabled(true);
   }
 
