@@ -1,13 +1,19 @@
 import { getLevel } from '../data/levels.js';
+import { PAINTINGS } from '../data/paintings.js';
 
 const STORAGE_KEY = 'un-nuevo-amanecer:save:v1';
 const SAVE_VERSION = 1;
 
 export const DEFAULT_CHECKPOINT = 'entrada';
+const PAINTING_IDS = new Set(PAINTINGS.map(painting => painting.id));
+
+function validPaintings(ids) {
+  return Array.isArray(ids) ? [...new Set(ids.filter(id => PAINTING_IDS.has(id)))] : [];
+}
 
 // Retorna la estructura base de un archivo de guardado limpio
 function emptySave() {
-  return { progress: null, audioMuted: false, paintings: [], completed: false };
+  return { progress: null, audioMuted: false, paintings: [], runPaintings: [], highScore: 0, completed: false };
 }
 
 let memorySave = emptySave();
@@ -34,6 +40,12 @@ function parseSave(raw) {
 
   // Valida que el progreso almacenado apunte al nivel actual y a un checkpoint válido
   const { progress, audioMuted, paintings } = saved;
+  const collection = validPaintings(paintings);
+  const runPaintings = Object.hasOwn(saved, 'runPaintings')
+    ? validPaintings(saved.runPaintings).filter(id => collection.includes(id))
+    : [...collection];
+  const highScore = Number.isInteger(saved.highScore) && saved.highScore <= PAINTING_IDS.size
+    ? saved.highScore : 0;
   const levelId = progress?.level === 'prototipo' ? 'nivel-1' : progress?.level;
   const level = getLevel(levelId);
   return {
@@ -42,9 +54,9 @@ function parseSave(raw) {
       : null,
     audioMuted: audioMuted === true,
     completed: saved.completed === true,
-    paintings: Array.isArray(paintings)
-      ? [...new Set(paintings.filter(id => typeof id === 'string' && id !== '' && id.trim() === id))]
-      : [],
+    paintings: collection,
+    runPaintings,
+    highScore: Math.max(highScore, runPaintings.length),
   };
 }
 
@@ -55,6 +67,7 @@ function snapshot() {
     ...memorySave,
     progress: memorySave.progress && { ...memorySave.progress },
     paintings: [...memorySave.paintings],
+    runPaintings: [...memorySave.runPaintings],
   };
 }
 
@@ -105,15 +118,17 @@ export function markGameCompleted() {
   return updateSave({ completed: true });
 }
 
+export function startNewRun() {
+  return updateSave({ progress: { level: 'nivel-1', checkpointId: DEFAULT_CHECKPOINT }, runPaintings: [] });
+}
+
 export function rememberPainting(paintingId) {
   const save = loadSave();
-  // Se valida que el id debe ser un string válido, no vacío, sin espacios extraños,
-  // y no debe estar ya guardado en el arreglo de pinturas
-  if (typeof paintingId !== 'string' || !paintingId || paintingId.trim() !== paintingId
-    || save.paintings.includes(paintingId)) {
+  if (!PAINTING_IDS.has(paintingId) || save.runPaintings.includes(paintingId)) {
     return save;
   }
 
-  // Agrega la nueva pintura al final del arreglo
-  return updateSave({ paintings: [...save.paintings, paintingId] });
+  const runPaintings = [...save.runPaintings, paintingId];
+  const paintings = save.paintings.includes(paintingId) ? save.paintings : [...save.paintings, paintingId];
+  return updateSave({ paintings, runPaintings, highScore: Math.max(save.highScore, runPaintings.length) });
 }

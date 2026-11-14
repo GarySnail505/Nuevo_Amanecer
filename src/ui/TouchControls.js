@@ -29,6 +29,10 @@ export class TouchControls {
     }
 
     const options = { signal: this.abortController.signal };
+    // Phaser escucha los eventos táctiles globalmente. Los botones usan Pointer Events.
+    for (const type of ['touchstart', 'touchmove', 'touchend', 'touchcancel']) {
+      this.container.addEventListener(type, event => event.stopPropagation(), options);
+    }
     window.addEventListener('blur', () => this.clearInput(), options);
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {

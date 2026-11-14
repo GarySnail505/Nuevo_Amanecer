@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { DEFAULT_CHECKPOINT } from '../systems/SaveStore.js';
+import { DEFAULT_CHECKPOINT, startNewRun } from '../systems/SaveStore.js';
 import { addMenuButton } from '../ui/MenuButton.js';
 
 // Arreglo que contiene la secuencia narrativa de la introducción
@@ -45,6 +45,7 @@ export class IntroScene extends Phaser.Scene {
         const enterOrphanage = () => {
             if (leaving) return;
             leaving = true;
+            startNewRun();
             // Inicia MovementScene, pasándole el punto de control base ('entrada') como punto de spawn
             this.scene.start('MovementScene', { checkpointId: DEFAULT_CHECKPOINT });
         };

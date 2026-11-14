@@ -76,7 +76,8 @@ export class MovementScene extends Phaser.Scene {
 
     this.createFlashlightDemo();
     this.createCombatDemo(platforms);
-    this.discoveredPaintings = new Set(loadSave().paintings);
+    const save = loadSave();
+    this.discoveredPaintings = new Set(save.runPaintings);
     this.paintings = PAINTINGS.filter(painting => painting.levelId === this.level.id).map(({ id, x, y }) => ({
       id,
       x,
@@ -85,6 +86,7 @@ export class MovementScene extends Phaser.Scene {
     }));
 
     this.hud = new GameHud(this, this.health, this.checkpointId, this.level);
+    this.hud.setScore(save.runPaintings.length, save.highScore);
     this.touchControls = new TouchControls(this, {
       onFlashlight: () => this.toggleFlashlight(),
       onPause: () => this.openRunMenu('pause'),
@@ -166,7 +168,8 @@ export class MovementScene extends Phaser.Scene {
 
       // Si es iluminada y no estaba en el registro de descubiertas (Set), se procesa el hallazgo
       if (illuminated && !this.discoveredPaintings.has(id)) {
-        rememberPainting(id);
+        const save = rememberPainting(id);
+        this.hud.setScore(save.runPaintings.length, save.highScore);
         // Pausa el movimiento y abre la escena modal del recuerdo para mostrar el texto narrativo
         this.discoveredPaintings.add(id);
         this.openOverlay('MemoriesScene', { returnTo: 'MovementScene', paintingId: id });

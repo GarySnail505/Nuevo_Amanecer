@@ -31,6 +31,8 @@ export class GameHud {
 
     this.healthLabel = scene.add.text(right, 62, '', { ...TEXT_STYLE, color: '#efb1b2' })
       .setOrigin(1, 0).setScrollFactor(0).setDepth(3);
+    this.scoreLabel = scene.add.text(right, 81, '', { ...TEXT_STYLE, fontSize: '12px' })
+      .setOrigin(1, 0).setScrollFactor(0).setDepth(3);
     this.setEnergy(1, false);
     this.setHealth(health);
     this.setCheckpoint(checkpointId);
@@ -44,6 +46,10 @@ export class GameHud {
 
   setHealth({ current, maxHealth }) {
     this.healthLabel.setText(`Salud ${current}/${maxHealth}`);
+  }
+
+  setScore(score, highScore) {
+    this.scoreLabel.setText(`Puntos ${score} · Récord ${highScore}`);
   }
 
   setCheckpoint(checkpointId) {

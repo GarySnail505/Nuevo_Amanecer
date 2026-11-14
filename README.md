@@ -7,7 +7,7 @@
 **Número del grupo** · 1
 
 | Integrante |
-| --- | 
+| --- |
 | Anthony Alangasí|
 | Anahí Achote    |
 | Gary Defas      |
@@ -47,9 +47,11 @@ El contacto con La Sombra quita un punto de salud. Si Harry pierde los tres punt
 | Activar o apagar la linterna | `J` o clic izquierdo | Botón de linterna |
 | Pausar | `Esc` | Botón **Pausa** |
 
-## Progreso de la Fase 5
+## Guardado y puntaje
 
 La primera franja de recarga del pasillo funciona como punto de control. Al pasar por encima, el juego guarda el progreso en este navegador con `localStorage`. **Continuar** y **Reintentar desde punto de control** devuelven a Harry a ese punto con la salud y la linterna llenas. **Iniciar** vuelve a la entrada.
+
+Cada pintura distinta que iluminas vale un punto por partida. El HUD muestra el puntaje actual y el récord guardado en el navegador. **Iniciar** abre una partida con cero puntos y conserva el récord y la galería.
 
 El menú de pausa permite continuar, reiniciar desde el punto de control, cambiar la preferencia de audio o volver al menú principal. Esta preferencia también controla el ambiente y los efectos de la cámara final. En dispositivos táctiles, los botones aparecen debajo del lienzo y permiten moverse y saltar a la vez.
 
@@ -59,7 +61,7 @@ La introducción muestra la llamada de Michael en el hospital y el regreso de Ha
 
 Ilumina las pinturas ocultas de cada sector. Al descubrir una, se abre su título y el recuerdo de Michael. La partida queda en pausa mientras lees. Puedes volver a consultar las pinturas encontradas desde **Recuerdos**, en el menú principal o en la pausa. La galería se guarda en el navegador junto con el punto de control.
 
-## Recorrido de la Fase 7
+## Niveles
 
 Busca la **Salida** al final de cada sector y selecciona **Entrar** para llegar al siguiente. **Continuar** y **Reintentar** recuperan el nivel y el último punto de control guardados.
 
@@ -70,6 +72,19 @@ Busca la **Salida** al final de cada sector y selecciona **Entrar** para llegar 
 5. **Rencor** cierra el recorrido en la cámara final. Sus golpes marcan el suelo antes del impacto. Salta o sal de la zona marcada y aprovecha el momento en que aparece el punto dorado para iluminarlo. Puedes recargar la linterna apagándola sobre la franja de la cámara.
 
 Tras debilitar a Rencor, acércate a la abertura y elige **Entrar en Rencor**. Usa la luz para avanzar hasta Michael y sigue el diálogo para terminar la historia. La partida conserva las pinturas descubiertas y registra que llegaste al final.
+
+## Estructura
+
+| Ruta | Contenido |
+| --- | --- |
+| `index.html` y `src/main.js` | Página de entrada e inicialización de Phaser |
+| `src/config/` | Configuración del motor, el lienzo y las escenas |
+| `src/scenes/` | Menú, introducción, niveles, recuerdos y desenlace |
+| `src/entities/` | Harry, enemigos y Rencor |
+| `src/systems/` | Linterna, combate, salud, audio y guardado |
+| `src/data/` | Geometría de los niveles y catálogo de pinturas |
+| `src/ui/` | HUD, botones, ilustraciones y controles táctiles |
+| `src/assets/` | Fachada del orfanato y audio de la cámara final |
 
 ## Créditos
 
