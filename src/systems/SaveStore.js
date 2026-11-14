@@ -1,12 +1,7 @@
+import { getLevel } from '../data/levels.js';
+
 const STORAGE_KEY = 'un-nuevo-amanecer:save:v1';
 const SAVE_VERSION = 1;
-const LEVEL_ID = 'prototipo';
-
-// Object.freeze bloquea el objeto para que no se le puedan añadir, eliminar o modificar propiedades
-export const CHECKPOINTS = Object.freeze({
-  entrada: Object.freeze({ x: 96, y: 282 }),
-  recarga: Object.freeze({ x: 350, y: 297 }),
-});
 
 export const DEFAULT_CHECKPOINT = 'entrada';
 
@@ -19,8 +14,8 @@ let memorySave = emptySave();
 let storageUnavailable = false;
 
 // Valida que el ID solicitado realmente exista en nuestro diccionario de CHECKPOINTS
-function isCheckpointId(checkpointId) {
-  return typeof checkpointId === 'string' && Object.hasOwn(CHECKPOINTS, checkpointId);
+function isCheckpointId(level, checkpointId) {
+  return typeof checkpointId === 'string' && Object.hasOwn(level.checkpoints, checkpointId);
 }
 
 // Deserializa y sanitiza los datos provenientes de localStorage
@@ -39,9 +34,11 @@ function parseSave(raw) {
 
   // Valida que el progreso almacenado apunte al nivel actual y a un checkpoint válido
   const { progress, audioMuted, paintings } = saved;
+  const levelId = progress?.level === 'prototipo' ? 'nivel-1' : progress?.level;
+  const level = getLevel(levelId);
   return {
-    progress: progress?.level === LEVEL_ID && isCheckpointId(progress.checkpointId)
-      ? { level: LEVEL_ID, checkpointId: progress.checkpointId }
+    progress: level.id === levelId && isCheckpointId(level, progress.checkpointId)
+      ? { level: level.id, checkpointId: progress.checkpointId }
       : null,
     audioMuted: audioMuted === true,
     paintings: Array.isArray(paintings)
@@ -90,12 +87,13 @@ function updateSave(changes) {
 
 // Se exportan los métodos para que el resto del juego los pueda usar
 
-export function saveCheckpoint(checkpointId) {
-  if (!isCheckpointId(checkpointId)) {
+export function saveCheckpoint(levelId, checkpointId) {
+  const level = getLevel(levelId);
+  if (level.id !== levelId || !isCheckpointId(level, checkpointId)) {
     return loadSave();
   }
 
-  return updateSave({ progress: { level: LEVEL_ID, checkpointId } });
+  return updateSave({ progress: { level: level.id, checkpointId } });
 }
 
 export function saveAudioMuted(muted) {
@@ -104,7 +102,7 @@ export function saveAudioMuted(muted) {
 
 export function rememberPainting(paintingId) {
   const save = loadSave();
-  // Se valida que el id debe ser un string válido, no vacío, sin espacios extraños, 
+  // Se valida que el id debe ser un string válido, no vacío, sin espacios extraños,
   // y no debe estar ya guardado en el arreglo de pinturas
   if (typeof paintingId !== 'string' || !paintingId || paintingId.trim() !== paintingId
     || save.paintings.includes(paintingId)) {

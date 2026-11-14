@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { getLevel } from '../data/levels.js';
 import { DEFAULT_CHECKPOINT } from '../systems/SaveStore.js';
 import { addAudioMenuButton, addMenuButton } from '../ui/MenuButton.js';
 
@@ -11,10 +12,15 @@ export class RunMenuScene extends Phaser.Scene {
   }
 
   // El método create recibe datos inyectados por la escena que la llamó (MovementScene).
-  // mode: determina si es 'pause' (Pausa) o 'defeat' (Game Over).
-  create({ mode = 'pause', checkpointId = DEFAULT_CHECKPOINT } = {}) {
+  // mode indica pausa, derrota o el paso al siguiente nivel.
+  create({ mode = 'pause', levelId, nextLevelId, checkpointId = DEFAULT_CHECKPOINT } = {}) {
     const { width, height } = this.scale.gameSize;
     const centerX = width / 2;
+
+    if (mode === 'passage') {
+      this.createPassageMenu(centerX, height, levelId, nextLevelId);
+      return;
+    }
 
     const paused = mode === 'pause';
 
@@ -51,11 +57,11 @@ export class RunMenuScene extends Phaser.Scene {
       this.scene.stop();
     });
 
-    // Reintentar: Detiene por completo MovementScene y la vuelve a arrancar limpia, 
+    // Reintentar: Detiene por completo MovementScene y la vuelve a arrancar limpia,
     // pasándole el último punto de control guardado
     const retry = () => transition(() => {
       this.scene.stop('MovementScene');
-      this.scene.start('MovementScene', { checkpointId });
+      this.scene.start('MovementScene', { levelId, checkpointId });
     });
 
     // Menú principal: Detiene el nivel actual y vuelve a la escena de inicio del juego
@@ -112,6 +118,36 @@ export class RunMenuScene extends Phaser.Scene {
     // Tecla 'R' para revivir
     this.input.keyboard.on('keydown-R', event => {
       if (!event.repeat) retry();
+    });
+  }
+
+  createPassageMenu(centerX, height, levelId, nextLevelId) {
+    const level = getLevel(levelId);
+    const next = nextLevelId && getLevel(nextLevelId);
+    this.add.rectangle(centerX, height / 2, centerX * 2, height, 0x080e17, 0.82);
+    this.add.rectangle(centerX, height / 2, 520, 230, 0x0e1721).setStrokeStyle(1, 0x47636c);
+    this.add.text(centerX, 113, next ? next.title : 'El umbral de Rencor', {
+      fontFamily: 'Georgia, serif', fontSize: '24px', color: '#eef0ed',
+    }).setOrigin(0.5);
+    this.add.text(centerX, 167, level.exitText, {
+      fontFamily: 'Georgia, serif', fontSize: '18px', color: '#bac5cd', align: 'center',
+      wordWrap: { width: 440 },
+    }).setOrigin(0.5);
+
+    let leaving = false;
+    const leave = () => {
+      if (leaving) return;
+      leaving = true;
+      this.scene.stop('MovementScene');
+      if (next) {
+        this.scene.start('MovementScene', { levelId: next.id });
+      } else {
+        this.scene.start('StartScene');
+      }
+    };
+    addMenuButton(this, centerX, 236, next ? 'Entrar' : 'Volver al menú', leave, { primary: true });
+    this.input.keyboard.on('keydown-ENTER', event => {
+      if (!event.repeat) leave();
     });
   }
 }

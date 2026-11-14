@@ -1,27 +1,17 @@
 import Phaser from 'phaser';
+import { getLevel, LEVELS } from '../data/levels.js';
 import { PAINTINGS } from '../data/paintings.js';
 import { Harry } from '../entities/Harry.js';
 import { Shadow } from '../entities/Shadow.js';
 import { FlashlightSystem } from '../systems/FlashlightSystem.js';
 import { HealthSystem } from '../systems/HealthSystem.js';
-import { CHECKPOINTS, DEFAULT_CHECKPOINT, loadSave, rememberPainting, saveCheckpoint } from '../systems/SaveStore.js';
+import { DEFAULT_CHECKPOINT, loadSave, rememberPainting, saveCheckpoint } from '../systems/SaveStore.js';
 import { GameHud } from '../ui/GameHud.js';
 import { drawPainting } from '../ui/PaintingArt.js';
 import { TouchControls } from '../ui/TouchControls.js';
 
-// Geometría del nivel estático
-const WORLD_WIDTH = 1664;
 const FLOOR_TOP = 312;
-const PLATFORMS = [
-  { x: 210, y: 262, width: 120 },
-  { x: 386, y: 218, width: 126 },
-  { x: 558, y: 260, width: 140 },
-  { x: 780, y: 256, width: 144 },
-  { x: 977, y: 220, width: 142 },
-  { x: 1180, y: 259, width: 128 },
-  { x: 1360, y: 246, width: 108 },
-];
-const RECHARGE_POINTS = [CHECKPOINTS.recarga.x, 1060];
+const POINT_RADIUS = 26;
 const RECHARGE_HALF_WIDTH = 24;
 const HARRY_MAX_HEALTH = 3;
 const CONTACT_DAMAGE = 1;
@@ -35,8 +25,9 @@ export class MovementScene extends Phaser.Scene {
   }
 
   // Se instancian objetos, se configura físicas y la cámara
-  create({ checkpointId = DEFAULT_CHECKPOINT } = {}) {
-    this.checkpointId = Object.hasOwn(CHECKPOINTS, checkpointId) ? checkpointId : DEFAULT_CHECKPOINT;
+  create({ levelId, checkpointId = DEFAULT_CHECKPOINT } = {}) {
+    this.level = getLevel(levelId);
+    this.checkpointId = Object.hasOwn(this.level.checkpoints, checkpointId) ? checkpointId : DEFAULT_CHECKPOINT;
     this.playTime = 0;
     this.overlayOpen = false;
 
@@ -44,22 +35,29 @@ export class MovementScene extends Phaser.Scene {
     const { height } = this.scale.gameSize;
 
     // Se configura los límites del motor de físicas.
-    this.physics.world.setBounds(0, 0, WORLD_WIDTH, height);
+    this.physics.world.setBounds(0, 0, this.level.width, height);
 
     this.drawBackground();
 
     const platforms = this.physics.add.staticGroup();
 
-    // Se crea el suelo base que cubre todo el ancho del mundo
-    this.addPlatform(platforms, 0, FLOOR_TOP, WORLD_WIDTH, height - FLOOR_TOP);
-
-    // Se itera sobre el arreglo de datos PLATFORMS para generar cada plataforma suspendida.
-    for (const { x, y, width } of PLATFORMS) {
-      this.addPlatform(platforms, x, y, width, 16);
+    for (const { x, width } of this.level.ground) {
+      this.addPlatform(platforms, { x, y: FLOOR_TOP, width, height: height - FLOOR_TOP });
     }
+    this.litPlatforms = [];
+    for (const platform of this.level.platforms) {
+      const elements = this.addPlatform(platforms, platform);
+      if (platform.lit) this.litPlatforms.push(elements);
+    }
+    this.crumbling = (this.level.crumbling ?? []).map(platform => {
+      const elements = this.addPlatform(platforms, platform);
+      elements.edge.setFillStyle(0xb2866e);
+      return elements;
+    });
+    this.createLevelMarkers();
 
     // Se instancia a Harry pasándole el contexto de esta escena ('this') y sus coordenadas iniciales.
-    const spawn = CHECKPOINTS[this.checkpointId];
+    const spawn = this.level.checkpoints[this.checkpointId];
     this.harry = new Harry(this, spawn.x, spawn.y);
 
     // Se usa collider para el manejo de colisiones entre la hitbox de Harry y alguna plataforma
@@ -69,7 +67,7 @@ export class MovementScene extends Phaser.Scene {
     const camera = this.cameras.main;
 
     // Se limita la cámara para que no muestre más allá de los bordes del nivel
-    camera.setBounds(0, 0, WORLD_WIDTH, height);
+    camera.setBounds(0, 0, this.level.width, height);
 
     // Se configura la cámara para que siga a Harry y se envía el valor de 0.14 y 1 a los parámetros
     // lerpX y lerpY para que el seguimiento de la cámara sea suave
@@ -78,14 +76,14 @@ export class MovementScene extends Phaser.Scene {
     this.createFlashlightDemo();
     this.createCombatDemo(platforms);
     this.discoveredPaintings = new Set(loadSave().paintings);
-    this.paintings = PAINTINGS.map(({ id, x, y }) => ({
+    this.paintings = PAINTINGS.filter(painting => painting.levelId === this.level.id).map(({ id, x, y }) => ({
       id,
       x,
       y,
       art: drawPainting(this, id, x, y, 24, 20).setDepth(2).setVisible(false),
     }));
 
-    this.hud = new GameHud(this, this.health, this.checkpointId);
+    this.hud = new GameHud(this, this.health, this.checkpointId, this.level);
     this.touchControls = new TouchControls(this, {
       onFlashlight: () => this.toggleFlashlight(),
       onPause: () => this.openRunMenu('pause'),
@@ -101,12 +99,19 @@ export class MovementScene extends Phaser.Scene {
       this.events.off(Phaser.Scenes.Events.RESUME, this.resumeRun, this);
     });
 
-    saveCheckpoint(this.checkpointId);
+    saveCheckpoint(this.level.id, this.checkpointId);
   }
 
   // update() es el Game Loop principal de la escena. Se ejecuta a ~60 fotogramas por segundo.
   update(_time, delta) {
     if (this.overlayOpen) {
+      return;
+    }
+
+    if (this.harry.body.bottom >= this.scale.gameSize.height) {
+      this.health.deplete();
+      this.hud.setHealth(this.health);
+      this.openRunMenu('defeat');
       return;
     }
 
@@ -120,16 +125,33 @@ export class MovementScene extends Phaser.Scene {
       });
     }
 
-    const atRechargePoint = RECHARGE_POINTS.some(x => this.isOnRechargePad(x));
-    if (this.checkpointId !== 'recarga' && this.isOnRechargePad(CHECKPOINTS.recarga.x)) {
-      this.checkpointId = 'recarga';
-      saveCheckpoint(this.checkpointId);
-      this.hud.setCheckpoint(this.checkpointId);
-    }
+    const atRechargePoint = this.level.recharge.some(x => this.isOnRechargePad(x));
+    this.updateCheckpoint();
     this.flashlight.update(delta, atRechargePoint);
     this.hud.setEnergy(this.flashlight.energyRatio, atRechargePoint && !this.flashlight.isOn);
-    if (!this.updatePaintings()) {
-      this.updateCombat(this.playTime, delta);
+    this.updatePlatforms();
+    if (this.updatePaintings()) {
+      return;
+    }
+    this.updateCombat(this.playTime, delta);
+    if (!this.overlayOpen && this.isNear(this.level.exit)) {
+      const nextLevel = LEVELS[LEVELS.indexOf(this.level) + 1];
+      this.openOverlay('RunMenuScene', { mode: 'passage', levelId: this.level.id, nextLevelId: nextLevel?.id });
+    }
+  }
+
+  isNear({ x, y }) {
+    return Math.abs(this.harry.x - x) <= POINT_RADIUS && Math.abs(this.harry.y - y) <= 16;
+  }
+
+  updateCheckpoint() {
+    const reached = Object.entries(this.level.checkpoints).find(([id, point]) => (
+      id !== DEFAULT_CHECKPOINT && id !== this.checkpointId && this.isNear(point)
+    ));
+    if (reached) {
+      [this.checkpointId] = reached;
+      saveCheckpoint(this.level.id, this.checkpointId);
+      this.hud.setCheckpoint(this.checkpointId);
     }
   }
 
@@ -159,10 +181,11 @@ export class MovementScene extends Phaser.Scene {
   }
 
   createFlashlightDemo() {
-    // Dibuja visualmente los puntos de recarga basados en las constantes declaradas
-    for (const x of RECHARGE_POINTS) {
+    // Dibuja los puntos de recarga configurados para el nivel.
+    for (const x of this.level.recharge) {
       this.add.rectangle(x, FLOOR_TOP + 4, RECHARGE_HALF_WIDTH * 2, 8, 0x73b3ae);
-      const label = x === CHECKPOINTS.recarga.x ? 'Recarga · Punto de control' : 'Recarga';
+      const isCheckpoint = Object.values(this.level.checkpoints).some(point => point.x === x);
+      const label = isCheckpoint ? 'Recarga · Punto de control' : 'Recarga';
       this.add.text(x, FLOOR_TOP + 12, label, {
         fontFamily: 'monospace',
         fontSize: '14px',
@@ -192,34 +215,44 @@ export class MovementScene extends Phaser.Scene {
   createCombatDemo(platforms) {
     this.health = new HealthSystem(HARRY_MAX_HEALTH, INVULNERABILITY_MS);
     this.knockbackUntil = 0;
-    this.shadow = new Shadow(this, 516, FLOOR_TOP - 19, { left: 420, right: 542 });
-    this.physics.add.collider(this.shadow, platforms);
+    this.enemies = this.level.enemies.map(({ x, y, ...behavior }) => {
+      const enemy = new Shadow(this, x, y, behavior);
+      this.physics.add.collider(enemy, platforms);
+      return enemy;
+    });
   }
 
   updateCombat(time, delta) {
     // La luz se evalúa antes del contacto para interrumpir el daño en el mismo fotograma.
-    const illuminated = this.flashlight.illuminates(this.shadow.x, this.shadow.y);
-    this.shadow.updateBehavior(delta, illuminated);
+    for (const enemy of this.enemies) {
+      const illuminated = this.flashlight.illuminates(enemy.x, enemy.y);
+      enemy.updateBehavior(delta, illuminated, this.harry);
 
-    // La intersección detecta el daño sin marcar a Harry como apoyado sobre la criatura.
-    const touchesShadow = this.shadow.canDamage
-      && this.physics.world.intersects(this.harry.body, this.shadow.body);
-    if (touchesShadow && this.health.takeDamage(CONTACT_DAMAGE, time)) {
-      const direction = this.harry.body.center.x < this.shadow.body.center.x ? -1 : 1;
-      this.knockbackUntil = time + KNOCKBACK_MS;
-      this.harry.setVelocity(direction * KNOCKBACK_SPEED, -130);
-      this.hud.setHealth(this.health);
-
-      if (this.health.isDepleted) {
-        this.openRunMenu('defeat');
+      // La intersección detecta el daño sin marcar a Harry como apoyado sobre la criatura.
+      if (enemy.canDamage && this.physics.world.intersects(this.harry.body, enemy.body)) {
+        this.damageHarry(enemy.body.center.x, time);
       }
     }
-
+    this.updateHazards(time);
     this.harry.setAlpha(this.health.isInvulnerable(time) ? 0.55 : 1);
   }
 
+  damageHarry(sourceX, time) {
+    if (!this.health.takeDamage(CONTACT_DAMAGE, time)) {
+      return;
+    }
+
+    const direction = this.harry.body.center.x < sourceX ? -1 : 1;
+    this.knockbackUntil = time + KNOCKBACK_MS;
+    this.harry.setVelocity(direction * KNOCKBACK_SPEED, -130);
+    this.hud.setHealth(this.health);
+    if (this.health.isDepleted) {
+      this.openRunMenu('defeat');
+    }
+  }
+
   openRunMenu(mode) {
-    this.openOverlay('RunMenuScene', { mode, checkpointId: this.checkpointId });
+    this.openOverlay('RunMenuScene', { mode, levelId: this.level.id, checkpointId: this.checkpointId });
   }
 
   // Evita abrir múltiples menús simultáneamente, se desactiva los controles si un menú está abierto
@@ -242,32 +275,125 @@ export class MovementScene extends Phaser.Scene {
   }
 
   // Método auxiliar para crear plataformas de manera limpia.
-  addPlatform(group, x, y, width, height) {
+  addPlatform(group, { x, y, width, height = 16, lit = false }) {
     // Posicionamiento de las plataformas
-    const surface = this.add.rectangle(x + width / 2, y + height / 2, width, height, 0x34434f);
+    const surface = this.add.rectangle(x + width / 2, y + height / 2, width, height, this.level.palette.platform);
 
     // Se añade al grupo de físicas estáticas.
     group.add(surface);
 
     // Borde decorativo superior de la plataforma.
-    this.add.rectangle(x, y, width, 3, 0x899ba0).setOrigin(0);
+    const edge = this.add.rectangle(x, y, width, 3, this.level.palette.edge).setOrigin(0);
+    if (lit) {
+      surface.setVisible(false);
+      edge.setVisible(false);
+      surface.body.enable = false;
+    }
+    return { surface, edge, x, y, width };
+  }
+
+  updatePlatforms() {
+    for (const { surface, edge } of this.litPlatforms) {
+      if (!surface.visible && this.flashlight.illuminates(surface.x, surface.y)) {
+        surface.setVisible(true);
+        edge.setVisible(true);
+        surface.body.enable = true;
+      }
+    }
+
+    const { left, right, bottom, velocity } = this.harry.body;
+    for (const platform of this.crumbling) {
+      const { surface, edge, x, y, width } = platform;
+      if (!platform.triggered && Math.abs(bottom - y) < 1 && velocity.y >= 0 && right > x && left < x + width) {
+        platform.triggered = true;
+        edge.setFillStyle(0xe7a879);
+        this.time.delayedCall(420, () => {
+          surface.body.enable = false;
+          surface.setVisible(false);
+          edge.setVisible(false);
+        });
+      }
+    }
+  }
+
+  createLevelMarkers() {
+    const { x, y } = this.level.exit;
+    if (this.level.id === 'nivel-5') {
+      const silhouette = this.add.graphics();
+      silhouette.fillStyle(0x1a101e).fillEllipse(x + 8, 219, 154, 151);
+      silhouette.fillStyle(0x362331).fillTriangle(x - 72, 302, x - 28, 189, x + 11, 302);
+      silhouette.fillTriangle(x - 6, 302, x + 56, 182, x + 77, 302);
+    }
+    this.add.rectangle(x, y - 13, 38, 56, this.level.palette.trim).setStrokeStyle(2, this.level.palette.edge);
+    this.add.text(x, y + 22, this.level.id === 'nivel-5' ? 'Umbral' : 'Salida', {
+      fontFamily: 'monospace', fontSize: '14px', color: '#eef0ed',
+    }).setOrigin(0.5, 0);
+
+    this.hazards = (this.level.hazards ?? []).map(hazard => {
+      const { x, y, width, height, kind } = hazard;
+      const shape = this.add.graphics();
+      const color = kind === 'embers' ? 0xd89262 : 0xc192b1;
+      shape.fillStyle(color);
+      for (let offset = 0; offset < width - 8; offset += 12) {
+        const foot = y + height;
+        shape.fillTriangle(x + offset, foot, x + offset + 5, y + offset % 6, x + offset + 9, foot);
+      }
+      return { ...hazard, shape };
+    });
+  }
+
+  updateHazards(time) {
+    const body = this.harry.body;
+    for (const { x, y, width, height, kind, shape } of this.hazards) {
+      const cycle = (time + x) % 1900;
+      const centerX = x + width / 2;
+      const suppressed = kind === 'hands' && this.flashlight.illuminates(centerX, y + height / 2);
+      const active = kind === 'embers' || (cycle >= 780 && cycle < 1350 && !suppressed);
+      shape.setAlpha(active ? 1 : cycle < 780 && !suppressed ? 0.45 : 0.18);
+      if (active && body.right > x && body.left < x + width && body.bottom > y && body.top < y + height) {
+        this.damageHarry(centerX, time);
+      }
+    }
   }
 
   // Dibuja el arte de fondo (Background) con formas primitivas
   drawBackground() {
     const wall = this.add.graphics();
+    const { palette, width } = this.level;
+    this.cameras.main.setBackgroundColor(palette.sky);
     // Bloques de color que simulan las paredes oscuras y zócalos de los pasillos
-    wall.fillStyle(0x18212d).fillRect(0, 97, WORLD_WIDTH, FLOOR_TOP - 97);
-    wall.fillStyle(0x25313f).fillRect(0, 97, WORLD_WIDTH, 4);
-    wall.fillStyle(0x141c27).fillRect(0, 282, WORLD_WIDTH, 30);
+    wall.fillStyle(palette.wall).fillRect(0, 97, width, FLOOR_TOP - 97);
+    wall.fillStyle(palette.trim).fillRect(0, 97, width, 4);
+    wall.fillStyle(palette.base).fillRect(0, 282, width, 30);
 
     // Bucle que genera objetos repetidos para realizar las pruebas y tener una referencia de la velocidad de desplazamiento
-    for (let x = 72; x < WORLD_WIDTH; x += 250) {
-      wall.fillStyle(0x202b38).fillRect(x, 101, 14, FLOOR_TOP - 101);
-      wall.fillStyle(0x283744).fillRect(x + 76, 137, 70, 88);
-      wall.fillStyle(0x111923).fillRect(x + 81, 142, 60, 78);
-      wall.fillStyle(0x1e2a36).fillRect(x + 84, 145, 26, 34);
+    for (let x = 72; x < width; x += 250) {
+      wall.fillStyle(palette.trim).fillRect(x, 101, 14, FLOOR_TOP - 101);
+      wall.fillStyle(palette.accent).fillRect(x + 76, 137, 70, 88);
+      wall.fillStyle(palette.sky).fillRect(x + 81, 142, 60, 78);
+      wall.fillStyle(palette.base).fillRect(x + 84, 145, 26, 34);
       wall.fillRect(x + 113, 182, 25, 35);
+      this.drawRoomDetails(wall, x, palette);
+    }
+  }
+
+  drawRoomDetails(wall, x, palette) {
+    switch (this.level.id) {
+      case 'nivel-2':
+        wall.fillStyle(palette.trim).fillRect(x + 24, 238, 119, 6)
+          .fillRect(x + 28, 244, 7, 22).fillRect(x + 133, 244, 7, 22);
+        break;
+      case 'nivel-3':
+        wall.fillStyle(palette.sky).fillTriangle(x + 45, 271, x + 63, 125, x + 93, 272);
+        wall.fillStyle(palette.accent).fillRect(x + 25, 270, 145, 6);
+        break;
+      case 'nivel-4':
+        wall.lineStyle(4, palette.accent).lineBetween(x + 13, 278, x + 61, 119)
+          .lineBetween(x + 61, 119, x + 152, 159);
+        break;
+      case 'nivel-5':
+        wall.fillStyle(palette.accent).fillTriangle(x + 21, 102, x + 169, 102, x + 115, 225);
+        break;
     }
   }
 }

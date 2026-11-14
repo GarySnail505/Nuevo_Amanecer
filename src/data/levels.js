@@ -1,0 +1,161 @@
+export const LEVELS = [
+  {
+    id: 'nivel-1',
+    title: 'El lugar que prometía un nuevo comienzo',
+    subtitle: 'Entrada y dormitorios del orfanato',
+    exitText: 'Un sonido detrás de la puerta conduce a las aulas.',
+    width: 1664,
+    palette: {
+      sky: 0x0b1018, wall: 0x18212d, trim: 0x25313f, base: 0x141c27,
+      accent: 0x283744, platform: 0x34434f, edge: 0x899ba0,
+    },
+    ground: [{ x: 0, width: 1664 }],
+    platforms: [
+      { x: 210, y: 262, width: 120 },
+      { x: 386, y: 218, width: 126 },
+      { x: 558, y: 260, width: 140 },
+      { x: 780, y: 256, width: 144 },
+      { x: 977, y: 220, width: 142 },
+      { x: 1180, y: 259, width: 128 },
+      { x: 1360, y: 246, width: 108 },
+    ],
+    checkpoints: {
+      entrada: { x: 96, y: 282 },
+      recarga: { x: 350, y: 297 },
+    },
+    recharge: [350, 1060],
+    exit: { x: 1588, y: 297 },
+    enemies: [{ kind: 'shadow', x: 516, y: 293, left: 420, right: 542 }],
+  },
+  {
+    id: 'nivel-2',
+    title: 'Los pasillos de las voces',
+    subtitle: 'Aulas y comedor',
+    exitText: 'Las voces se apagan al llegar a los dormitorios.',
+    width: 1580,
+    palette: {
+      sky: 0x10131a, wall: 0x212930, trim: 0x3b4845, base: 0x1c2226,
+      accent: 0x465755, platform: 0x4f4942, edge: 0xa79a7f,
+    },
+    ground: [{ x: 0, width: 420 }, { x: 475, width: 425 }, { x: 960, width: 620 }],
+    platforms: [
+      { x: 195, y: 262, width: 104 },
+      { x: 324, y: 220, width: 100 },
+      { x: 588, y: 244, width: 116 },
+      { x: 754, y: 256, width: 118, lit: true },
+      { x: 1116, y: 258, width: 128 },
+      { x: 1296, y: 222, width: 110 },
+    ],
+    checkpoints: {
+      entrada: { x: 84, y: 297 },
+      comedor: { x: 806, y: 297 },
+    },
+    recharge: [368, 806],
+    exit: { x: 1512, y: 297 },
+    enemies: [
+      { kind: 'echo', x: 665, y: 293, left: 513, right: 754 },
+      { kind: 'bullies', x: 1150, y: 299, left: 1067, right: 1200 },
+      { kind: 'bullies', x: 1240, y: 299, left: 1179, right: 1315 },
+    ],
+  },
+  {
+    id: 'nivel-3',
+    title: 'Lo que quedó en las cenizas',
+    subtitle: 'Dormitorios, almacén y patio',
+    exitText: 'Tras el patio, una abertura conduce al sector más antiguo.',
+    width: 1810,
+    palette: {
+      sky: 0x181215, wall: 0x2e2526, trim: 0x5b4239, base: 0x252021,
+      accent: 0x594044, platform: 0x554644, edge: 0xc49a7f,
+    },
+    ground: [
+      { x: 0, width: 364 }, { x: 440, width: 300 }, { x: 820, width: 250 },
+      { x: 1160, width: 276 }, { x: 1510, width: 300 },
+    ],
+    platforms: [
+      { x: 168, y: 253, width: 98 },
+      { x: 524, y: 256, width: 107 },
+      { x: 927, y: 252, width: 103, lit: true },
+      { x: 1182, y: 256, width: 114 },
+      { x: 1543, y: 248, width: 112 },
+    ],
+    checkpoints: {
+      entrada: { x: 85, y: 297 },
+      almacen: { x: 868, y: 297 },
+    },
+    recharge: [307, 868, 1531],
+    exit: { x: 1746, y: 297 },
+    enemies: [
+      { kind: 'abandoned', x: 666, y: 293, left: 487, right: 706 },
+      { kind: 'residue', x: 1302, y: 300, left: 1185, right: 1381 },
+    ],
+    hazards: [
+      { kind: 'embers', x: 932, y: 298, width: 66, height: 14 },
+      { kind: 'embers', x: 1315, y: 298, width: 70, height: 14 },
+    ],
+    crumbling: [{ x: 275, y: 252, width: 54 }, { x: 1100, y: 271, width: 52 }],
+  },
+  {
+    id: 'nivel-4',
+    title: 'Los recuerdos que no deberían existir',
+    subtitle: 'Sector antiguo y habitaciones deformadas',
+    exitText: 'La voz de Michael atraviesa la gran puerta deformada.',
+    width: 1880,
+    palette: {
+      sky: 0x11101b, wall: 0x251f34, trim: 0x4c3d57, base: 0x1e1a2b,
+      accent: 0x493750, platform: 0x4f425c, edge: 0xa98cb8,
+    },
+    ground: [{ x: 0, width: 430 }, { x: 1245, width: 635 }],
+    platforms: [
+      { x: 200, y: 254, width: 100 },
+      { x: 490, y: 270, width: 105 },
+      { x: 665, y: 228, width: 110 },
+      { x: 850, y: 188, width: 117 },
+      { x: 1045, y: 226, width: 110 },
+      { x: 1060, y: 164, width: 72, lit: true },
+      { x: 1140, y: 286, width: 80, lit: true },
+      { x: 1460, y: 250, width: 103 },
+      { x: 1740, y: 223, width: 109 },
+    ],
+    checkpoints: {
+      entrada: { x: 85, y: 297 },
+      umbral: { x: 395, y: 297 },
+      pasaje: { x: 1293, y: 297 },
+    },
+    recharge: [395, 1293],
+    exit: { x: 1815, y: 297 },
+    enemies: [{ kind: 'witness', x: 1704, y: 289, left: 1450, right: 1785 }],
+    hazards: [
+      { kind: 'hands', x: 1362, y: 267, width: 62, height: 45 },
+      { kind: 'hands', x: 1643, y: 265, width: 61, height: 47 },
+    ],
+  },
+  {
+    id: 'nivel-5',
+    title: 'Rencor',
+    subtitle: 'Entrada a la cámara final',
+    exitText: 'Al fondo de la cámara, una enorme silueta aguarda.',
+    width: 1300,
+    palette: {
+      sky: 0x130d18, wall: 0x291d2b, trim: 0x573445, base: 0x211622,
+      accent: 0x593847, platform: 0x503c4c, edge: 0xa48091,
+    },
+    ground: [{ x: 0, width: 1300 }],
+    platforms: [
+      { x: 310, y: 258, width: 126 },
+      { x: 644, y: 246, width: 120 },
+      { x: 925, y: 241, width: 128 },
+    ],
+    checkpoints: {
+      entrada: { x: 85, y: 297 },
+      camara: { x: 505, y: 297 },
+    },
+    recharge: [505, 1080],
+    exit: { x: 1220, y: 297 },
+    enemies: [],
+  },
+];
+
+export function getLevel(levelId) {
+  return LEVELS.find(level => level.id === levelId) ?? LEVELS[0];
+}

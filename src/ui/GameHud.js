@@ -6,19 +6,20 @@ const TEXT_STYLE = {
 const ENERGY_BAR_WIDTH = 140;
 
 export class GameHud {
-  constructor(scene, health, checkpointId) {
+  constructor(scene, health, checkpointId, level) {
     const right = scene.scale.gameSize.width - 20;
     const barX = right - ENERGY_BAR_WIDTH;
 
-    scene.add.text(20, 18, 'Prueba de combate', {
+    scene.add.text(20, 9, level.title, {
       fontFamily: 'Georgia, serif',
-      fontSize: '25px',
+      fontSize: '21px',
       color: '#eef0ed',
+      wordWrap: { width: barX - 39 },
     }).setScrollFactor(0).setDepth(3);
 
-    this.checkpointLabel = scene.add.text(20, 51, '', { ...TEXT_STYLE, color: '#bde2dc' })
+    this.checkpointLabel = scene.add.text(20, 57, '', { ...TEXT_STYLE, color: '#bde2dc' })
       .setScrollFactor(0).setDepth(3);
-    scene.add.text(20, 74, 'Esc · Pausa', { ...TEXT_STYLE, color: '#bac5cd' })
+    scene.add.text(20, 77, level.subtitle, { ...TEXT_STYLE, color: '#bac5cd' })
       .setScrollFactor(0).setDepth(3);
 
     this.energyLabel = scene.add.text(right, 23, '', TEXT_STYLE)
@@ -46,7 +47,8 @@ export class GameHud {
   }
 
   setCheckpoint(checkpointId) {
-    const label = checkpointId === 'recarga' ? 'Recarga' : 'Entrada';
+    const names = { entrada: 'Entrada', recarga: 'Recarga', comedor: 'Comedor', almacen: 'Almacén', umbral: 'Umbral', pasaje: 'Pasaje', camara: 'Cámara' };
+    const label = names[checkpointId] ?? checkpointId;
     this.checkpointLabel.setText(`Punto de control · ${label}`);
   }
 }

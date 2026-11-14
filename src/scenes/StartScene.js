@@ -15,8 +15,8 @@ export class StartScene extends Phaser.Scene {
 
     // Carga el estado guardado del jugador al iniciar el juego
     const save = loadSave();
-    // Extrae el último checkpoint alcanzado
-    const savedCheckpoint = save.progress?.checkpointId;
+    // Extrae el último nivel y checkpoint alcanzados
+    const savedProgress = save.progress;
 
     // Aplicamos la preferencia de audio guardada al sistema global de sonido de Phaser
     this.sound.mute = save.audioMuted;
@@ -37,13 +37,13 @@ export class StartScene extends Phaser.Scene {
     let openingMemories = false;
 
     // Función de arranque del juego
-    const enterGame = checkpointId => {
+    const enterGame = progress => {
       if (starting || openingMemories) return;
       starting = true;
 
-      if (checkpointId) {
+      if (progress) {
         // Si hay un checkpoint guardado (Continuar), se inicia directamente en nivel almacenado
-        this.scene.start('MovementScene', { checkpointId });
+        this.scene.start('MovementScene', { levelId: progress.level, checkpointId: progress.checkpointId });
       } else {
         // Si es una partida nueva (Iniciar), se muestra primero la introducción narrativa
         this.scene.start('IntroScene');
@@ -90,7 +90,7 @@ export class StartScene extends Phaser.Scene {
 
     menu.add([
       addMenuButton(this, menuX, 106, 'Iniciar', () => enterGame(), { primary: true }).container,
-      addMenuButton(this, menuX, 156, 'Continuar', () => enterGame(savedCheckpoint), { enabled: Boolean(savedCheckpoint) }).container,
+      addMenuButton(this, menuX, 156, 'Continuar', () => enterGame(savedProgress), { enabled: Boolean(savedProgress) }).container,
       addMenuButton(this, menuX, 206, 'Recuerdos', openMemories).container,
       addAudioMenuButton(this, menuX, 256).container,
       addMenuButton(this, menuX, 306, 'Controles', () => {
@@ -102,7 +102,7 @@ export class StartScene extends Phaser.Scene {
     // Tecla ENTER para iniciar rápido
     this.input.keyboard.on('keydown-ENTER', event => {
       if (!event.repeat && !controls.visible) {
-        enterGame(savedCheckpoint);
+        enterGame(savedProgress);
       }
     });
 

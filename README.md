@@ -57,4 +57,20 @@ El menú de pausa permite continuar, reiniciar desde el punto de control, cambia
 
 La introducción muestra la llamada de Michael en el hospital y el regreso de Harry al orfanato. Pulsa **Continuar** en cada fragmento para avanzar.
 
-Ilumina las dos pinturas ocultas del pasillo. Al descubrir una, se abre su título y el recuerdo de Michael. La partida queda en pausa mientras lees. Puedes volver a consultar las pinturas encontradas desde **Recuerdos**, en el menú principal o en la pausa. La galería se guarda en el navegador junto con el punto de control.
+Ilumina las pinturas ocultas de cada sector. Al descubrir una, se abre su título y el recuerdo de Michael. La partida queda en pausa mientras lees. Puedes volver a consultar las pinturas encontradas desde **Recuerdos**, en el menú principal o en la pausa. La galería se guarda en el navegador junto con el punto de control.
+
+## Recorrido de la Fase 7
+
+Busca la **Salida** al final de cada sector y selecciona **Entrar** para llegar al siguiente. **Continuar** y **Reintentar** recuperan el nivel y el último punto de control guardados.
+
+1. **El lugar que prometía un nuevo comienzo** presenta la linterna y a La Sombra.
+2. **Los pasillos de las voces** añade saltos entre tramos del aula y enemigos que se pueden esquivar.
+3. **Lo que quedó en las cenizas** incluye brasas y plataformas que ceden después de pisarlas.
+4. **Los recuerdos que no deberían existir** exige cruzar un pasaje elevado y esquivar manos que emergen del suelo. La luz frena al Testigo y revela plataformas ocultas.
+5. **Rencor** permite recorrer la antesala y llegar al umbral. El combate del jefe y el desenlace corresponden a la Fase 8.
+
+## Créditos
+
+- **Desarrollo y diseño** · Integrantes del grupo indicados en este documento.
+- **Fachada del orfanato** · Ilustración SVG creada para el prototipo.
+- **Herramientas** · [Phaser](https://phaser.io/) y [Vite](https://vite.dev/).

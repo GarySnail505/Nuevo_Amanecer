@@ -14,6 +14,10 @@ export class HealthSystem {
     return timeMs < this.invulnerableUntilMs;
   }
 
+  deplete() {
+    this.current = 0;
+  }
+
   takeDamage(amount, timeMs) {
     if (this.isDepleted || this.isInvulnerable(timeMs)) {
       return false;
