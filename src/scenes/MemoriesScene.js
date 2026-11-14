@@ -16,7 +16,7 @@ export class MemoriesScene extends Phaser.Scene {
     }
 
     // El método create recibe un objeto de configuración inyectado por la escena que lo llamó
-    create({ returnTo = 'StartScene', paintingId } = {}) {
+    create({ returnTo = 'StartScene', paintingId, levelId } = {}) {
         this.returnTo = returnTo;
 
         // Cargamos los IDs de las pinturas descubiertas
@@ -24,7 +24,8 @@ export class MemoriesScene extends Phaser.Scene {
 
         this.closing = false;
         this.panel = null;
-        this.galleryPage = 0;
+        const firstPaintingInLevel = PAINTINGS.findIndex(painting => painting.levelId === levelId);
+        this.galleryPage = Math.floor(Math.max(0, firstPaintingInLevel) / PAINTINGS_PER_PAGE);
 
         // Busca si se solicitó abrir una pintura específica y se valida que realmente esté descubierta
         const painting = PAINTINGS.find(entry => entry.id === paintingId && this.discovered.has(entry.id));
@@ -33,7 +34,7 @@ export class MemoriesScene extends Phaser.Scene {
             // Si hay una pintura solicitada, instanciamos el "Modo Lectura" de ese recuerdo
             this.showReader(painting, 'Continuar', () => this.close());
         } else {
-            // Si no, mostramos la primera página de la galería.
+            // Si no, mostramos la galería, a partir del nivel indicado cuando se abre en un refugio.
             this.showGallery();
         }
 

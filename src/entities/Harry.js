@@ -72,6 +72,8 @@ export class Harry extends Phaser.Physics.Arcade.Sprite {
     const grounded = this.body.blocked.down || this.body.touching.down;
     if (jumpPressed && grounded) {
       this.setVelocityY(-JUMP_SPEED);
+      return true;
     }
+    return false;
   }
 }

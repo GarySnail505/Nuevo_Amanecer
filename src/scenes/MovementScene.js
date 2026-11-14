@@ -4,6 +4,7 @@ import { PAINTINGS } from '../data/paintings.js';
 import { Harry } from '../entities/Harry.js';
 import { Rencor } from '../entities/Rencor.js';
 import { Shadow } from '../entities/Shadow.js';
+import { ExplorationAudio } from '../systems/ExplorationAudio.js';
 import { FlashlightSystem } from '../systems/FlashlightSystem.js';
 import { HealthSystem } from '../systems/HealthSystem.js';
 import { DEFAULT_CHECKPOINT, loadSave, rememberPainting, saveCheckpoint } from '../systems/SaveStore.js';
@@ -31,6 +32,9 @@ export class MovementScene extends Phaser.Scene {
     this.checkpointId = Object.hasOwn(this.level.checkpoints, checkpointId) ? checkpointId : DEFAULT_CHECKPOINT;
     this.playTime = 0;
     this.overlayOpen = false;
+    this.refugePrompt = null;
+    this.memoryNoticeTimer = null;
+    this.explorationAudio = new ExplorationAudio(this, { withMusic: !this.level.boss });
 
     // Se obtiene la altura del lienzo (canvas) configurada en el juego
     const { height } = this.scale.gameSize;
@@ -78,8 +82,9 @@ export class MovementScene extends Phaser.Scene {
     this.createCombatDemo(platforms);
     const save = loadSave();
     this.discoveredPaintings = new Set(save.runPaintings);
-    this.paintings = PAINTINGS.filter(painting => painting.levelId === this.level.id).map(({ id, x, y }) => ({
+    this.paintings = PAINTINGS.filter(painting => painting.levelId === this.level.id).map(({ id, title, x, y }) => ({
       id,
+      title,
       x,
       y,
       art: drawPainting(this, id, x, y, 24, 20).setDepth(2).setVisible(false),
@@ -97,6 +102,11 @@ export class MovementScene extends Phaser.Scene {
         this.openRunMenu('pause');
       }
     });
+    if (this.level.refuge) {
+      this.input.keyboard.on('keydown-E', event => {
+        if (!event.repeat) this.openRefugeMemories();
+      });
+    }
     this.events.on(Phaser.Scenes.Events.RESUME, this.resumeRun, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.events.off(Phaser.Scenes.Events.RESUME, this.resumeRun, this);
@@ -113,6 +123,7 @@ export class MovementScene extends Phaser.Scene {
 
     if (this.harry.body.bottom >= this.scale.gameSize.height) {
       this.health.deplete();
+      this.explorationAudio.playHurt();
       this.hud.setHealth(this.health);
       this.openRunMenu('defeat');
       return;
@@ -121,11 +132,12 @@ export class MovementScene extends Phaser.Scene {
     this.playTime += delta;
     const jumpRequested = this.touchControls.consumeJump();
     if (this.playTime >= this.knockbackUntil) {
-      this.harry.updateMovement({
+      const jumped = this.harry.updateMovement({
         leftDown: this.touchControls.leftDown,
         rightDown: this.touchControls.rightDown,
         jumpRequested,
       });
+      if (jumped) this.explorationAudio.playJump();
     }
 
     const atRechargePoint = this.level.recharge.some(x => this.isOnRechargePad(x));
@@ -137,6 +149,11 @@ export class MovementScene extends Phaser.Scene {
       return;
     }
     this.updateCombat(this.playTime, delta);
+    if (this.refugePrompt && !this.overlayOpen) {
+      const atRefuge = this.isAtRefuge();
+      this.refugePrompt.setVisible(atRefuge);
+      this.explorationAudio.setQuiet(atRefuge);
+    }
     if (!this.overlayOpen && this.isNear(this.level.exit) && (!this.rencor || this.rencor.isOpen)) {
       const nextLevel = LEVELS[LEVELS.indexOf(this.level) + 1];
       this.openOverlay('RunMenuScene', { mode: 'passage', levelId: this.level.id, nextLevelId: nextLevel?.id });
@@ -159,7 +176,7 @@ export class MovementScene extends Phaser.Scene {
   }
 
   updatePaintings() {
-    for (const { id, x, y, art } of this.paintings) {
+    for (const { id, title, x, y, art } of this.paintings) {
       // Evalúa si el punto (x,y) de la pintura actual está dentro del alcance del haz de la linterna
       const illuminated = this.flashlight.illuminates(x, y);
 
@@ -170,13 +187,36 @@ export class MovementScene extends Phaser.Scene {
       if (illuminated && !this.discoveredPaintings.has(id)) {
         const save = rememberPainting(id);
         this.hud.setScore(save.runPaintings.length, save.highScore);
-        // Pausa el movimiento y abre la escena modal del recuerdo para mostrar el texto narrativo
         this.discoveredPaintings.add(id);
+        this.explorationAudio.playDiscovery();
+        if (this.level.refuge) {
+          this.showMemoryNotice(title);
+          continue;
+        }
         this.openOverlay('MemoriesScene', { returnTo: 'MovementScene', paintingId: id });
         return true;
       }
     }
     return false;
+  }
+
+  showMemoryNotice(title) {
+    this.memoryNotice.setText(`Recuerdo guardado · ${title}`).setVisible(true);
+    this.memoryNoticeTimer?.remove();
+    this.memoryNoticeTimer = this.time.delayedCall(2600, () => this.memoryNotice.setVisible(false));
+  }
+
+  isAtRefuge() {
+    const { x, y, width } = this.level.refuge;
+    const { body } = this.harry;
+    return (body.blocked.down || body.touching.down)
+      && Math.abs(this.harry.x - x) <= width / 2 && Math.abs(this.harry.y - y) <= 3;
+  }
+
+  openRefugeMemories() {
+    if (this.isAtRefuge()) {
+      this.openOverlay('MemoriesScene', { returnTo: 'MovementScene', levelId: this.level.id });
+    }
   }
 
   // Se verifica si Harry está sobre una zona de recarga
@@ -251,6 +291,7 @@ export class MovementScene extends Phaser.Scene {
       return;
     }
 
+    this.explorationAudio.playHurt();
     const direction = this.harry.body.center.x < sourceX ? -1 : 1;
     this.knockbackUntil = time + KNOCKBACK_MS;
     this.harry.setVelocity(direction * KNOCKBACK_SPEED, -130);
@@ -272,6 +313,7 @@ export class MovementScene extends Phaser.Scene {
     }
 
     this.overlayOpen = true;
+    this.explorationAudio.setQuiet(true);
     this.touchControls.setEnabled(false);
     this.scene.pause();
     this.scene.launch(sceneKey, data);
@@ -281,6 +323,7 @@ export class MovementScene extends Phaser.Scene {
   resumeRun() {
     this.overlayOpen = false;
     this.touchControls.setEnabled(true);
+    this.explorationAudio.setQuiet(Boolean(this.level.refuge) && this.isAtRefuge());
   }
 
   // Método auxiliar para crear plataformas de manera limpia.
@@ -334,6 +377,15 @@ export class MovementScene extends Phaser.Scene {
       }).setOrigin(0.5, 0);
     }
 
+    if (this.level.refuge) this.createRefuge();
+    if (this.level.routeSign) {
+      const { x, y } = this.level.routeSign;
+      this.add.text(x, y, '↑ Muebles\n→ Pasillo', {
+        fontFamily: 'monospace', fontSize: '13px', color: '#e7c688', backgroundColor: '#262a2b',
+        lineSpacing: 2, padding: { x: 7, y: 4 },
+      }).setOrigin(0.5);
+    }
+
     this.hazards = (this.level.hazards ?? []).map(hazard => {
       const { x, y, width, height, kind } = hazard;
       const shape = this.add.graphics();
@@ -345,6 +397,32 @@ export class MovementScene extends Phaser.Scene {
       }
       return { ...hazard, shape };
     });
+  }
+
+  createRefuge() {
+    const { x, width } = this.level.refuge;
+    const light = this.add.graphics();
+    light.fillStyle(0xe7c688, 0.12).fillTriangle(x, 201, x - width / 2, FLOOR_TOP, x + width / 2, FLOOR_TOP);
+    light.fillStyle(0xe7c688, 0.22).fillEllipse(x, FLOOR_TOP - 2, width, 7);
+    light.fillStyle(0xbb9e73).fillRect(x - 12, 198, 24, 5);
+    light.fillStyle(0xffe4aa).fillRect(x - 8, 203, 16, 4);
+    this.add.text(x, 222, 'Refugio', {
+      fontFamily: 'Georgia, serif', fontSize: '18px', color: '#ffe4aa',
+    }).setOrigin(0.5);
+
+    this.refugePrompt = this.add.text(x, 253, '[E] Leer recuerdos', {
+      fontFamily: 'monospace', fontSize: '13px', color: '#ffe4aa', backgroundColor: '#202527',
+      padding: { x: 8, y: 6 },
+    }).setOrigin(0.5).setDepth(3).setVisible(false).setInteractive({ useHandCursor: true });
+    this.refugePrompt.on('pointerdown', (_pointer, _x, _y, event) => event.stopPropagation());
+    this.refugePrompt.on('pointerup', pointer => {
+      if (pointer.wasTouch || pointer.button === 0) this.openRefugeMemories();
+    });
+
+    this.memoryNotice = this.add.text(this.scale.gameSize.width / 2, 105, '', {
+      fontFamily: 'monospace', fontSize: '13px', color: '#ffe4aa', backgroundColor: '#202527',
+      padding: { x: 10, y: 6 },
+    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(3).setVisible(false);
   }
 
   updateHazards(time) {

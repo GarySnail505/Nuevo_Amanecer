@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import facadeUrl from '../assets/fachada-provisional.svg?no-inline';
+import { preloadExplorationAudio } from '../systems/ExplorationAudio.js';
 import { preloadRencorAudio } from '../systems/RencorAudio.js';
 
 export class PreloadScene extends Phaser.Scene {
@@ -9,6 +10,7 @@ export class PreloadScene extends Phaser.Scene {
 
   preload() {
     this.load.svg('orphanage-facade', facadeUrl);
+    preloadExplorationAudio(this);
     preloadRencorAudio(this);
   }
 

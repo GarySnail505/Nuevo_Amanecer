@@ -37,8 +37,8 @@ export const PAINTINGS = [
         title: 'La silla vacía',
         fragment: 'La silla de Harry estuvo vacía durante mucho tiempo. Me dijeron que volvería pronto. Intenté no llorar, porque sabía que si me veían llorar sería peor.',
         levelId: 'nivel-2',
-        x: 1060,
-        y: 297,
+        x: 1336,
+        y: 161,
     },
     {
         id: 'la-habitacion-de-los-dos',

@@ -1,4 +1,4 @@
-import { saveAudioMuted } from '../systems/SaveStore.js';
+import { loadSave, saveAudioMuted } from '../systems/SaveStore.js';
 
 export function addMenuButton(scene, x, y, title, onPress, { width = 224, enabled = true, primary = false } = {}) {
   const fill = primary ? 0x31535a : 0x192633;
@@ -25,9 +25,11 @@ export function addMenuButton(scene, x, y, title, onPress, { width = 224, enable
 }
 
 export function addAudioMenuButton(scene, x, y, options) {
-  const audioLabel = () => scene.sound.mute ? 'Audio apagado' : 'Audio activado';
+  // El navegador puede tener el audio suspendido hasta la primera pulsación.
+  let muted = loadSave().audioMuted;
+  const audioLabel = () => muted ? 'Audio apagado' : 'Audio activado';
   const button = addMenuButton(scene, x, y, audioLabel(), () => {
-    const muted = !scene.sound.mute;
+    muted = !muted;
     scene.sound.mute = muted;
     saveAudioMuted(muted);
     button.label.setText(audioLabel());
