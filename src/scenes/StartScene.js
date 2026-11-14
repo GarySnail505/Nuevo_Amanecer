@@ -66,7 +66,8 @@ export class StartScene extends Phaser.Scene {
     });
 
     // Subtítulo indicador en la parte inferior de la pantalla
-    this.add.text(centerX, height - 17, 'ESCENA DE INICIO · PROTOTIPO', {
+    const storyStatus = save.completed ? 'Historia completada' : 'ESCENA DE INICIO · PROTOTIPO';
+    this.add.text(centerX, height - 17, storyStatus, {
       fontFamily: 'monospace',
       fontSize: '16px',
       color: '#bac5cd',

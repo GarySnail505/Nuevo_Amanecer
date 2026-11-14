@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { EndingScene } from '../scenes/EndingScene.js';
 import { IntroScene } from '../scenes/IntroScene.js';
 import { MemoriesScene } from '../scenes/MemoriesScene.js';
 import { MovementScene } from '../scenes/MovementScene.js';
@@ -23,5 +24,5 @@ export const gameConfig = {
     arcade: { gravity: { y: 900 } },
   },
   //orden de ejecución
-  scene: [PreloadScene, StartScene, IntroScene, MovementScene, RunMenuScene, MemoriesScene],
+  scene: [PreloadScene, StartScene, IntroScene, MovementScene, EndingScene, RunMenuScene, MemoriesScene],
 };

@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { getLevel, LEVELS } from '../data/levels.js';
 import { PAINTINGS } from '../data/paintings.js';
 import { Harry } from '../entities/Harry.js';
+import { Rencor } from '../entities/Rencor.js';
 import { Shadow } from '../entities/Shadow.js';
 import { FlashlightSystem } from '../systems/FlashlightSystem.js';
 import { HealthSystem } from '../systems/HealthSystem.js';
@@ -134,7 +135,7 @@ export class MovementScene extends Phaser.Scene {
       return;
     }
     this.updateCombat(this.playTime, delta);
-    if (!this.overlayOpen && this.isNear(this.level.exit)) {
+    if (!this.overlayOpen && this.isNear(this.level.exit) && (!this.rencor || this.rencor.isOpen)) {
       const nextLevel = LEVELS[LEVELS.indexOf(this.level) + 1];
       this.openOverlay('RunMenuScene', { mode: 'passage', levelId: this.level.id, nextLevelId: nextLevel?.id });
     }
@@ -220,6 +221,10 @@ export class MovementScene extends Phaser.Scene {
       this.physics.add.collider(enemy, platforms);
       return enemy;
     });
+    this.rencor = this.level.boss ? new Rencor(this, this.level.exit.x, FLOOR_TOP) : null;
+    if (this.rencor) {
+      this.damageFromRencor = x => this.damageHarry(x, this.playTime);
+    }
   }
 
   updateCombat(time, delta) {
@@ -234,6 +239,7 @@ export class MovementScene extends Phaser.Scene {
       }
     }
     this.updateHazards(time);
+    this.rencor?.update(delta, this.harry, this.flashlight, this.damageFromRencor);
     this.harry.setAlpha(this.health.isInvulnerable(time) ? 0.55 : 1);
   }
 
@@ -318,16 +324,12 @@ export class MovementScene extends Phaser.Scene {
 
   createLevelMarkers() {
     const { x, y } = this.level.exit;
-    if (this.level.id === 'nivel-5') {
-      const silhouette = this.add.graphics();
-      silhouette.fillStyle(0x1a101e).fillEllipse(x + 8, 219, 154, 151);
-      silhouette.fillStyle(0x362331).fillTriangle(x - 72, 302, x - 28, 189, x + 11, 302);
-      silhouette.fillTriangle(x - 6, 302, x + 56, 182, x + 77, 302);
+    if (!this.level.boss) {
+      this.add.rectangle(x, y - 13, 38, 56, this.level.palette.trim).setStrokeStyle(2, this.level.palette.edge);
+      this.add.text(x, y + 22, 'Salida', {
+        fontFamily: 'monospace', fontSize: '14px', color: '#eef0ed',
+      }).setOrigin(0.5, 0);
     }
-    this.add.rectangle(x, y - 13, 38, 56, this.level.palette.trim).setStrokeStyle(2, this.level.palette.edge);
-    this.add.text(x, y + 22, this.level.id === 'nivel-5' ? 'Umbral' : 'Salida', {
-      fontFamily: 'monospace', fontSize: '14px', color: '#eef0ed',
-    }).setOrigin(0.5, 0);
 
     this.hazards = (this.level.hazards ?? []).map(hazard => {
       const { x, y, width, height, kind } = hazard;

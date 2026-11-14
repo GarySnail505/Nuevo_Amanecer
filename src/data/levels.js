@@ -133,8 +133,9 @@ export const LEVELS = [
   {
     id: 'nivel-5',
     title: 'Rencor',
-    subtitle: 'Entrada a la cámara final',
-    exitText: 'Al fondo de la cámara, una enorme silueta aguarda.',
+    subtitle: 'Cámara final',
+    exitText: 'Entre las sombras, Harry distingue una abertura.',
+    boss: true,
     width: 1300,
     palette: {
       sky: 0x130d18, wall: 0x291d2b, trim: 0x573445, base: 0x211622,

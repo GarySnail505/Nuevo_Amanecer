@@ -24,7 +24,9 @@ export class TouchControls {
     const actions = this.addGroup();
     this.addButton(actions, 'Salto', 'Saltar', { onPress: () => { this.jumpQueued = true; } });
     this.addButton(actions, 'Luz', 'Activar o apagar linterna', { onTap: onFlashlight });
-    this.addButton(actions, 'Pausa', 'Pausar', { onTap: onPause });
+    if (onPause) {
+      this.addButton(actions, 'Pausa', 'Pausar', { onTap: onPause });
+    }
 
     const options = { signal: this.abortController.signal };
     window.addEventListener('blur', () => this.clearInput(), options);

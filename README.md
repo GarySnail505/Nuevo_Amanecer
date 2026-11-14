@@ -51,7 +51,7 @@ El contacto con La Sombra quita un punto de salud. Si Harry pierde los tres punt
 
 La primera franja de recarga del pasillo funciona como punto de control. Al pasar por encima, el juego guarda el progreso en este navegador con `localStorage`. **Continuar** y **Reintentar desde punto de control** devuelven a Harry a ese punto con la salud y la linterna llenas. **Iniciar** vuelve a la entrada.
 
-El menú de pausa permite continuar, reiniciar desde el punto de control, cambiar la preferencia de audio o volver al menú principal. La preferencia de audio queda guardada para cuando se incorporen los sonidos del juego. En dispositivos táctiles, los botones aparecen debajo del lienzo y permiten moverse y saltar a la vez.
+El menú de pausa permite continuar, reiniciar desde el punto de control, cambiar la preferencia de audio o volver al menú principal. Esta preferencia también controla el ambiente y los efectos de la cámara final. En dispositivos táctiles, los botones aparecen debajo del lienzo y permiten moverse y saltar a la vez.
 
 ## Historia y recuerdos
 
@@ -67,10 +67,13 @@ Busca la **Salida** al final de cada sector y selecciona **Entrar** para llegar 
 2. **Los pasillos de las voces** añade saltos entre tramos del aula y enemigos que se pueden esquivar.
 3. **Lo que quedó en las cenizas** incluye brasas y plataformas que ceden después de pisarlas.
 4. **Los recuerdos que no deberían existir** exige cruzar un pasaje elevado y esquivar manos que emergen del suelo. La luz frena al Testigo y revela plataformas ocultas.
-5. **Rencor** permite recorrer la antesala y llegar al umbral. El combate del jefe y el desenlace corresponden a la Fase 8.
+5. **Rencor** cierra el recorrido en la cámara final. Sus golpes marcan el suelo antes del impacto. Salta o sal de la zona marcada y aprovecha el momento en que aparece el punto dorado para iluminarlo. Puedes recargar la linterna apagándola sobre la franja de la cámara.
+
+Tras debilitar a Rencor, acércate a la abertura y elige **Entrar en Rencor**. Usa la luz para avanzar hasta Michael y sigue el diálogo para terminar la historia. La partida conserva las pinturas descubiertas y registra que llegaste al final.
 
 ## Créditos
 
 - **Desarrollo y diseño** · Integrantes del grupo indicados en este documento.
 - **Fachada del orfanato** · Ilustración SVG creada para el prototipo.
+- **Audio de la cámara final** · Ambiente y efectos sintetizados para el juego.
 - **Herramientas** · [Phaser](https://phaser.io/) y [Vite](https://vite.dev/).

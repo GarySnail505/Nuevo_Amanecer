@@ -7,7 +7,7 @@ export const DEFAULT_CHECKPOINT = 'entrada';
 
 // Retorna la estructura base de un archivo de guardado limpio
 function emptySave() {
-  return { progress: null, audioMuted: false, paintings: [] };
+  return { progress: null, audioMuted: false, paintings: [], completed: false };
 }
 
 let memorySave = emptySave();
@@ -41,6 +41,7 @@ function parseSave(raw) {
       ? { level: level.id, checkpointId: progress.checkpointId }
       : null,
     audioMuted: audioMuted === true,
+    completed: saved.completed === true,
     paintings: Array.isArray(paintings)
       ? [...new Set(paintings.filter(id => typeof id === 'string' && id !== '' && id.trim() === id))]
       : [],
@@ -98,6 +99,10 @@ export function saveCheckpoint(levelId, checkpointId) {
 
 export function saveAudioMuted(muted) {
   return typeof muted === 'boolean' ? updateSave({ audioMuted: muted }) : loadSave();
+}
+
+export function markGameCompleted() {
+  return updateSave({ completed: true });
 }
 
 export function rememberPainting(paintingId) {

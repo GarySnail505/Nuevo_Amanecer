@@ -142,10 +142,10 @@ export class RunMenuScene extends Phaser.Scene {
       if (next) {
         this.scene.start('MovementScene', { levelId: next.id });
       } else {
-        this.scene.start('StartScene');
+        this.scene.start('EndingScene');
       }
     };
-    addMenuButton(this, centerX, 236, next ? 'Entrar' : 'Volver al menú', leave, { primary: true });
+    addMenuButton(this, centerX, 236, next ? 'Entrar' : 'Entrar en Rencor', leave, { primary: true });
     this.input.keyboard.on('keydown-ENTER', event => {
       if (!event.repeat) leave();
     });
