@@ -1,6 +1,9 @@
 import Phaser from 'phaser';
 import facadeUrl from '../assets/fachada-provisional.svg?no-inline';
+import titleLogoUrl from '../assets/TituloInicio.png';
+import menuMusicUrl from '../assets/audio/soundtrackInicio.mp3';
 import { preloadExplorationAudio } from '../systems/ExplorationAudio.js';
+import introVideoUrl from '../assets/video/Intro.mp4';
 import { preloadRencorAudio } from '../systems/RencorAudio.js';
 
 export class PreloadScene extends Phaser.Scene {
@@ -10,6 +13,10 @@ export class PreloadScene extends Phaser.Scene {
 
   preload() {
     this.load.svg('orphanage-facade', facadeUrl);
+    this.load.image('game-title', titleLogoUrl);
+    this.load.audio('menu-music', menuMusicUrl);
+    this.load.video('intro-video', introVideoUrl, false);
+
     preloadExplorationAudio(this);
     preloadRencorAudio(this);
   }

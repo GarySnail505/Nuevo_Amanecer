@@ -179,10 +179,14 @@ export class EndingScene extends Phaser.Scene {
   finish() {
     this.stage = 'finished';
     markGameCompleted();
+    const { width, height } = this.scale.gameSize;
+    const centerX = width / 2;
 
-    this.add.text(320, 64, 'Un nuevo amanecer', {
-      fontFamily: 'Georgia, serif', fontSize: '36px', color: '#fff3df', stroke: '#544658', strokeThickness: 3,
-    }).setOrigin(0.5).setDepth(12);
+    // Imagen del título con la misma escala y alineación que en StartScene
+    const titleImage = this.add.image(centerX, 110, 'game-title')
+      .setOrigin(0.5)
+      .setScale(0.5)
+      .setDepth(11);
 
     const goToMainMenu = () => {
       if (this.leaving || this.memoriesOpen) return;

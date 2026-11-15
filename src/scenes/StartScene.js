@@ -21,15 +21,29 @@ export class StartScene extends Phaser.Scene {
     // Aplicamos la preferencia de audio guardada al sistema global de sonido de Phaser
     this.sound.mute = save.audioMuted;
 
+    // Música del menú
+    let menuMusic = null;
+    const startMenuMusic = () => {
+      if (menuMusic && !menuMusic.isPlaying) {
+        menuMusic.play();
+      }
+    };
+
+    if (this.cache.audio.exists('menu-music')) {
+      menuMusic = this.sound.add('menu-music', { loop: true, volume: 0.42 });
+      if (this.sound.locked) {
+        this.sound.once(Phaser.Sound.Events.UNLOCKED, startMenuMusic);
+      } else {
+        startMenuMusic();
+      }
+    }
+
     // Dibuja la imagen de fondo
     this.add.image(centerX, height / 2, 'orphanage-facade');
 
     // Título principal del juego
-    this.add.text(centerX, 49, 'Un nuevo amanecer', {
-      fontFamily: 'Georgia, serif',
-      fontSize: '42px',
-      color: '#eef0ed',
-    }).setOrigin(0.5);
+    const titleImage = this.add.image(centerX - 120, 70, 'game-title').setOrigin(0.5);
+    titleImage.setScale(0.5);
 
     // Evita que la escena se inicie varias veces si el jugador
     // hace clic repetidamente en "Iniciar" o "Recuerdos" antes de que termine la transición
@@ -59,14 +73,21 @@ export class StartScene extends Phaser.Scene {
     };
 
     // Restablece la bandera cuando el jugador cierra la galería de recuerdos
+    // y detiene la música del menú al iniciar el juego
     const resetMemories = () => { openingMemories = false; };
     this.events.on(Phaser.Scenes.Events.RESUME, resetMemories);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.events.off(Phaser.Scenes.Events.RESUME, resetMemories);
+      this.sound.off(Phaser.Sound.Events.UNLOCKED, startMenuMusic);
+      if (menuMusic) {
+        menuMusic.stop();
+        menuMusic.destroy();
+        menuMusic = null;
+      }
     });
 
     // Subtítulo indicador en la parte inferior de la pantalla
-    const storyStatus = save.completed ? 'Historia completada' : 'ESCENA DE INICIO · PROTOTIPO';
+    const storyStatus = save.completed ? 'Historia completada' : '';
     this.add.text(centerX, height - 17, storyStatus, {
       fontFamily: 'monospace',
       fontSize: '16px',
