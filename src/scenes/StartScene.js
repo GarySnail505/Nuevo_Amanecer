@@ -153,7 +153,7 @@ export class StartScene extends Phaser.Scene {
 
       this.add.text(82, 135, [
         'A / D o ← / → · Moverse',
-        'Espacio · Saltar',
+        'W / ↑ · Saltar',
         'J o clic izquierdo · Luz',
         'Esc · Pausa',
       ], bodyStyle),

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { Harry } from '../entities/Harry.js';
+import { addRencorSprite, RENCOR_DEAD } from '../entities/RencorSprite.js';
 import { FlashlightSystem } from '../systems/FlashlightSystem.js';
 import { markGameCompleted } from '../systems/SaveStore.js';
 import { addMenuButton } from '../ui/MenuButton.js';
@@ -170,7 +171,8 @@ export class EndingScene extends Phaser.Scene {
     const { light, silhouette, fog, dust } = this.drawExterior();
     this.cameras.main.fadeIn(820, 12, 9, 16);
     this.tweens.add({ targets: light, alpha: 1, duration: 2200, ease: 'Sine.InOut' });
-    this.tweens.add({ targets: silhouette, alpha: 0, scaleX: 0.84, duration: 1450, delay: 940, ease: 'Sine.In' });
+    this.time.delayedCall(940, () => silhouette.play(RENCOR_DEAD));
+    this.tweens.add({ targets: silhouette, alpha: 0, duration: 790, delay: 1600, ease: 'Sine.In' });
     this.tweens.add({ targets: fog, alpha: 0, x: -82, duration: 2200, delay: 380 });
     this.tweens.add({ targets: dust, alpha: 0.88, y: -25, delay: 1020, duration: 600, yoyo: true });
     this.time.delayedCall(2580, () => this.showDialogue(DAWN_LINES, 0, 'Terminar', () => this.finish()));
@@ -263,11 +265,7 @@ export class EndingScene extends Phaser.Scene {
     horizon.fillStyle(0x5c4c5d).fillRect(0, 247, 640, 113);
     horizon.fillStyle(0x443948).fillTriangle(0, 360, 196, 265, 518, 360).fillRect(0, 339, 640, 21);
 
-    const silhouette = this.add.graphics().setPosition(239, 244).setDepth(9);
-    silhouette.fillStyle(0x322536).fillEllipse(0, -44, 132, 91);
-    silhouette.fillTriangle(-55, -49, -72, -109, -24, -65).fillTriangle(20, -63, 51, -119, 54, -51);
-    silhouette.fillTriangle(-59, -37, -112, -3, -31, -14).fillTriangle(51, -34, 105, 2, 26, -8);
-    silhouette.fillStyle(0x9e666e).fillEllipse(-21, -51, 14, 6).fillEllipse(20, -56, 13, 6);
+    const silhouette = addRencorSprite(this, 239, 244, 178, { collisionEnabled: false }).setDepth(9);
 
     const fog = this.add.graphics().setAlpha(0.56).setDepth(9);
     fog.fillStyle(0x9a889f).fillEllipse(208, 251, 640, 28).fillEllipse(473, 269, 405, 21);

@@ -43,7 +43,7 @@ El contacto con La Sombra quita un punto de salud. Si Harry pierde los tres punt
 | Acción | Escritorio | Móvil |
 | --- | --- | --- |
 | Moverse | `A` y `D` o flechas izquierda y derecha | Botones de dirección |
-| Saltar | `Espacio` | Botón de salto |
+| Saltar | `W` o `↑` | Botón de salto |
 | Activar o apagar la linterna | `J` o clic izquierdo | Botón de linterna |
 | Pausar | `Esc` | Botón **Pausa** |
 
@@ -53,7 +53,7 @@ La primera franja de recarga del pasillo funciona como punto de control. Al pasa
 
 Cada pintura distinta que iluminas vale un punto por partida. El HUD muestra el puntaje actual y el récord guardado en el navegador. **Iniciar** abre una partida con cero puntos y conserva el récord y la galería.
 
-El menú de pausa permite continuar, reiniciar desde el punto de control, cambiar la preferencia de audio o volver al menú principal. Esta preferencia también controla el ambiente y los efectos de la cámara final. En dispositivos táctiles, los botones aparecen debajo del lienzo y permiten moverse y saltar a la vez.
+El menú de pausa permite continuar, reiniciar desde el punto de control, cambiar la preferencia de audio o volver al menú principal. Esta preferencia también controla el ambiente y los efectos de la cámara final. En dispositivos táctiles, los botones se superponen en las esquinas inferiores del lienzo y permiten moverse y saltar a la vez.
 
 ## Historia y recuerdos
 

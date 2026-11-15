@@ -4,6 +4,8 @@ body {
 }
 
 #game {
+  position: relative;
+  display: flow-root;
   width: 100%;
   height: 100vh;
   height: 100dvh;
@@ -13,29 +15,17 @@ body {
   display: block;
 }
 
-:root {
-  --touch-controls-height: calc(64px + env(safe-area-inset-bottom, 0px));
-}
-
-#game.game-with-touch-controls {
-  height: calc(100vh - var(--touch-controls-height));
-  height: calc(100dvh - var(--touch-controls-height));
-}
-
 .touch-controls {
-  position: fixed;
-  inset: auto 0 0;
+  position: absolute;
+  z-index: 1;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
   box-sizing: border-box;
-  height: var(--touch-controls-height);
   padding: 8px max(8px, env(safe-area-inset-right, 0px))
-    calc(8px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px));
-  border-top: 1px solid #34434f;
-  background: #101b25;
-  touch-action: none;
+    max(8px, env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px));
+  pointer-events: none;
   user-select: none;
 }
 
@@ -45,24 +35,28 @@ body {
 
 .touch-controls-group {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 .touch-controls button {
   min-width: 44px;
-  min-height: 44px;
+  min-height: 48px;
   padding: 0 7px;
-  border: 1px solid #536572;
-  border-radius: 6px;
-  background: #202d3b;
-  color: #eef0ed;
+  border: 1px solid rgb(191 211 225 / 0.46);
+  border-radius: 8px;
+  background: rgb(13 22 34 / 0.30);
+  color: #f7f9fb;
   font: 600 14px system-ui, sans-serif;
+  text-shadow: 0 1px 3px #080e17;
+  pointer-events: auto;
   touch-action: none;
+  cursor: pointer;
 }
 
-.touch-controls button:active {
+.touch-controls button:active,
+.touch-controls button[data-pressed] {
   border-color: #e7c688;
-  background: #34434f;
+  background: rgb(51 70 86 / 0.73);
 }
 
 .touch-controls button:focus-visible {

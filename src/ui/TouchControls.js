@@ -1,16 +1,19 @@
+const TOUCH_LAYOUT = '(any-pointer: coarse), (max-width: 720px)';
+
 export class TouchControls {
   constructor(scene, { onFlashlight, onPause }) {
     this.enabled = false;
     this.jumpQueued = false;
     this.pressedPointers = new Map();
 
-    const touchAvailable = navigator.maxTouchPoints > 0 || window.matchMedia('(any-pointer: coarse)').matches;
-    if (!touchAvailable || !scene.scale.parent) {
+    if (!scene.scale.parent) {
       return;
     }
 
     this.scene = scene;
     this.gameElement = scene.scale.parent;
+    this.hasTouchScreen = navigator.maxTouchPoints > 0;
+    this.touchLayout = window.matchMedia(TOUCH_LAYOUT);
     this.abortController = new AbortController();
     this.container = document.createElement('div');
     this.container.className = 'touch-controls';
@@ -39,11 +42,12 @@ export class TouchControls {
         this.clearInput();
       }
     }, options);
+    this.touchLayout.addEventListener('change', () => this.updateVisibility(), options);
 
-    this.gameElement.after(this.container);
-    this.gameElement.classList.add('game-with-touch-controls');
-    scene.scale.getParentBounds();
-    scene.scale.refresh();
+    this.gameElement.append(this.container);
+    // Phaser emite resize después de ajustar el tamaño y los márgenes del lienzo.
+    scene.scale.on('resize', this.positionOverCanvas, this);
+    this.positionOverCanvas();
     this.setEnabled(true);
 
     scene.events.once('shutdown', this.destroy, this);
@@ -70,8 +74,23 @@ export class TouchControls {
     }
 
     this.enabled = enabled;
-    this.container.hidden = !enabled;
-    this.clearInput();
+    this.updateVisibility();
+  }
+
+  updateVisibility() {
+    this.container.hidden = !this.enabled || (!this.hasTouchScreen && !this.touchLayout.matches);
+    if (this.container.hidden) this.clearInput();
+  }
+
+  positionOverCanvas() {
+    const canvas = this.scene.game.canvas.getBoundingClientRect();
+    const parent = this.gameElement.getBoundingClientRect();
+    Object.assign(this.container.style, {
+      left: `${canvas.left - parent.left}px`,
+      top: `${canvas.top - parent.top}px`,
+      width: `${canvas.width}px`,
+      height: `${canvas.height}px`,
+    });
   }
 
   destroy() {
@@ -81,13 +100,11 @@ export class TouchControls {
 
     this.setEnabled(false);
     this.abortController.abort();
+    this.scene.scale.off('resize', this.positionOverCanvas, this);
     this.container.remove();
     this.container = null;
-    this.gameElement.classList.remove('game-with-touch-controls');
     this.scene.events.off('shutdown', this.destroy, this);
     this.scene.events.off('destroy', this.destroy, this);
-    this.scene.scale.getParentBounds();
-    this.scene.scale.refresh();
   }
 
   addGroup() {
@@ -113,12 +130,12 @@ export class TouchControls {
       event.preventDefault();
       button.setPointerCapture(event.pointerId);
       this.pressedPointers.set(event.pointerId, { button, direction });
+      button.dataset.pressed = '';
       onPress?.();
     }, options);
 
     button.addEventListener('pointerup', event => {
-      const pointer = this.pressedPointers.get(event.pointerId);
-      this.pressedPointers.delete(event.pointerId);
+      const pointer = this.releasePointer(event.pointerId);
       if (pointer?.button !== button || !this.enabled || !onTap) {
         return;
       }
@@ -129,7 +146,7 @@ export class TouchControls {
       }
     }, options);
 
-    const release = event => this.pressedPointers.delete(event.pointerId);
+    const release = event => this.releasePointer(event.pointerId);
     button.addEventListener('pointercancel', release, options);
     button.addEventListener('lostpointercapture', release, options);
     button.addEventListener('click', event => {
@@ -138,6 +155,17 @@ export class TouchControls {
         (onPress ?? onTap)?.();
       }
     }, options);
+  }
+
+  releasePointer(pointerId) {
+    const pointer = this.pressedPointers.get(pointerId);
+    if (!pointer) return;
+
+    this.pressedPointers.delete(pointerId);
+    if (![...this.pressedPointers.values()].some(({ button }) => button === pointer.button)) {
+      delete pointer.button.dataset.pressed;
+    }
+    return pointer;
   }
 
   isDirectionHeld(direction) {
@@ -153,6 +181,7 @@ export class TouchControls {
   clearInput() {
     this.jumpQueued = false;
     for (const [pointerId, { button }] of this.pressedPointers) {
+      delete button.dataset.pressed;
       if (button.hasPointerCapture(pointerId)) {
         button.releasePointerCapture(pointerId);
       }

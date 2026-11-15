@@ -72,6 +72,10 @@ export class RunMenuScene extends Phaser.Scene {
 
     // MENÚ DE PAUSA
     if (paused) {
+      this.add.text(centerX, 72, 'W / ↑ · Saltar', {
+        fontFamily: 'monospace', fontSize: '12px', color: '#bac5cd',
+      }).setOrigin(0.5);
+
       // Abre la galería de coleccionables por encima del menú de pausa
       const openMemories = () => {
         if (transitioning || openingMemories) return;
